@@ -77,7 +77,7 @@ img{display:block}
 .frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));container-type:inline-size}
 .frame img.art{position:absolute;object-fit:cover;background:var(--bg3)}
 .frame svg.fr{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-/* サムネの目印（相手の美術館の中だけで表示）：額縁の左上から下がる黄色いしおりに、濃い茶色の文字で「サムネ」 */
+/* サムネの目印（相手の美術館とマイ美術館の中だけで表示）：額縁の左上から下がる黄色いしおりに、濃い茶色の文字で「サムネ」 */
 .ribbon{position:absolute;z-index:2;padding:.4em .5em 1em;font-size:9px;font-size:clamp(6px,5.2cqw,12px);font-weight:800;line-height:1;letter-spacing:.04em;white-space:nowrap;color:#5A3D00;background:linear-gradient(90deg,#F5B01E,#FFC93F 45%,#F5B01E);clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - .6em),0 100%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 
 /* ---------- carousel ---------- */
@@ -877,7 +877,7 @@ function pageMuseum(P){
   const right = `<button class="iconbtn r" data-act="wallView" aria-label="${grid ? '壁に並べて表示' : '一覧で表示'}">${grid ? I.wall : I.grid}</button>`;
   if (!works.length) return shell(title, `${ownerHTML}<div class="empty">まだ作品がありません。${P.kind === 'mine' ? '<button class="pbtn red" data-act="newWork">作品を追加</button>' : ''}</div>`, right);
   const badge = x => P.kind === 'artist' && x.c ? '<span class="wbadge got">もらった</span>' : '';
-  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}${x.c ? '（もらった作品）' : ''}">${frame(x.w, { ribbon: P.kind === 'artist' && !!x.thumb })}${badge(x)}</button>`;
+  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}${x.c ? '（もらった作品）' : ''}">${frame(x.w, { ribbon: (P.kind === 'artist' && !!x.thumb) || (P.kind === 'mine' && x.w.id === S.thumbId) })}${badge(x)}</button>`;
   let body;
   if (grid) body = `<div class="mgrid">${works.map((x, i) => item(x, i, 'position:relative')).join('')}</div>`;
   else {
@@ -887,7 +887,7 @@ function pageMuseum(P){
     const total = Math.max(xt, xb) + 10;
     body = `<div class="wall" id="wall" style="height:${H}px"><div class="inner" style="width:${total}px">${works.map((o, i) => item(o, i, `left:${pos[i].left}px;top:${pos[i].top}px;width:${pos[i].w}px`)).join('')}</div></div><div class="prog"><i id="progBar"></i></div>`;
   }
-  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">作品をタップすると編集できます。サムネは作品の編集画面で設定できます。</p>' : `<p class="help">${hint}</p>`}`, right);
+  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">「サムネ」のタグが付いた作品が、すれ違った相手に届きます。作品をタップすると編集できます。</p>' : `<p class="help">${hint}</p>`}`, right);
 }
 function pageDetail(P){
   const { w, c } = P; const loc = S.settings.location;
