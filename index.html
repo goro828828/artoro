@@ -77,15 +77,8 @@ img{display:block}
 .frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));container-type:inline-size}
 .frame img.art{position:absolute;object-fit:cover;background:var(--bg3)}
 .frame svg.fr{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-/* サムネの目印：額縁の内側のふちに掛けた布のしおり。金色のサテン地に白いステッチ、先は燕尾。額縁の飾りと同じ星と「サムネ」 */
-.ribbon{position:absolute;z-index:2;width:18%;pointer-events:none;filter:drop-shadow(0 .5cqw .6cqw rgba(0,0,0,.45))}
-.ribbon .rb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9cqw;aspect-ratio:1/2;padding-bottom:5cqw;box-sizing:border-box;
-  background:linear-gradient(90deg,rgba(0,0,0,.14),rgba(255,255,255,.28) 32%,rgba(255,255,255,0) 58%,rgba(0,0,0,.12)),linear-gradient(180deg,#9C6B12 0 7%,#E9B53D 7.5%,#D9A12C 70%,#C88F1F);
-  clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%)}
-.ribbon .rb::before{content:"";position:absolute;top:10%;bottom:12%;left:11%;right:11%;border-left:1px dashed rgba(255,255,255,.55);border-right:1px dashed rgba(255,255,255,.55)}
-.ribbon svg{width:3.2cqw;height:3.2cqw;fill:#FFF6D8}
-@container (max-width: 130px){ .ribbon b, .ribbon svg, .ribbon .rb::before{display:none} }   /* 地図などの小さな額縁ではリボンだけ見せる */
-.ribbon b{font-family:var(--f-jp);font-weight:800;color:#fff;font-size:8px;font-size:clamp(4px,3cqw,13px);letter-spacing:.04em;line-height:1;white-space:nowrap;text-shadow:0 .25cqw 0 rgba(110,70,0,.55)}
+/* サムネの目印：額縁の左上から下がる黄色いしおりに、濃い茶色の文字で「サムネ」 */
+.ribbon{position:absolute;z-index:2;padding:.4em .5em 1em;font-size:9px;font-size:clamp(6px,5.2cqw,12px);font-weight:800;line-height:1;letter-spacing:.04em;white-space:nowrap;color:#5A3D00;background:linear-gradient(90deg,#F5B01E,#FFC93F 45%,#F5B01E);clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - .6em),0 100%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 
 /* ---------- carousel ---------- */
 .car{--iw:min(60vw,272px);display:flex;align-items:center;overflow-x:auto;scroll-snap-type:x mandatory;padding:26px calc((100% - var(--iw))/2) 18px;scrollbar-width:none;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));min-height:calc(var(--iw) * 1.38)}
@@ -474,7 +467,7 @@ function frame(w, opts = {}){
   const W = 400, H = Math.round(400 * w.aspect[1] / w.aspect[0]) + 20, t = Math.min(W, H) * .11;
   return `<div class="frame" style="aspect-ratio:${W}/${H}">
     <img class="art" src="${src(w)}" alt="${esc(w.title)}" style="left:${t/W*100}%;top:${t/H*100}%;width:${(W-2*t)/W*100}%;height:${(H-2*t)/H*100}%" loading="lazy" draggable="false">
-    ${frameSVG(W, H)}${opts.ribbon ? `<span class="ribbon" style="left:${t/W*100 + 4}%;top:${t/H*100 * .6}%"><span class="rb"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0Q5 5 10 5Q5 5 5 10Q5 5 0 5Q5 5 5 0Z"/></svg><b>サムネ</b></span></span>` : ''}</div>`;
+    ${frameSVG(W, H)}${opts.ribbon ? `<span class="ribbon" style="left:${t/W*100 + 5}%;top:${t/H*100 * .55}%">サムネ</span>` : ''}</div>`;
 }
 
 /* ================= sample world ================= */
