@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="ARTORO（アートロ）｜すれ違いで作品を交換するアプリのWeb版デモ">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F4553B'/%3E%3Ctext x='32' y='44' font-family='Arial' font-weight='700' font-size='34' text-anchor='middle' fill='white'%3EA%3C/text%3E%3C/svg%3E">
+<title>ARTORO</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: one white phone column (max 480px) based on the Figma HOME screen; black baroque frames hold the works; floating pill tab bar.
+   Deliberately single light theme, matching the Figma mock. */
+:root{
+  color-scheme:light;
+  --bg:#FFFFFF; --bg2:#F4F4F4; --bg3:#E9E9E9; --ink:#121212; --muted:#8B8B8B; --line:#EAEAEA;
+  --coral:#F4553B; --blue:#4A9BF5; --lime:#B5D80F; --yellow:#FFC234; --cream:#FFF4DC;
+  --shadow:0 6px 22px rgba(0,0,0,.08);
+  --f-latin:"Outfit","M PLUS Rounded 1c",system-ui,sans-serif;
+  --f-jp:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans",system-ui,sans-serif;
+  --nav-h:64px;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-jp);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:90;background:var(--bg)}
+*{box-sizing:border-box}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+img{display:block}
+.app{max-width:480px;margin:0 auto;min-height:100%;position:relative}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.pad-nav{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 28px)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- tab bar ---------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:60;pointer-events:none;padding:0 max(20px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 14px) max(20px,env(safe-area-inset-left,0px))}
+.nav nav{pointer-events:auto;max-width:400px;margin:0 auto;height:50px;background:var(--bg);border-radius:25px;box-shadow:0 4px 18px rgba(0,0,0,.1);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;justify-items:center}
+.nav button{width:48px;height:32px;border-radius:16px;display:grid;place-items:center;color:var(--ink);transition:background .2s}
+.nav button svg{width:21px;height:21px}
+.nav button[aria-current="page"]{background:var(--coral);color:#fff}
+
+/* ---------- headers ---------- */
+.hhead{display:flex;justify-content:space-between;align-items:flex-start;padding-top:18px;gap:12px}
+.hhead h1{font-family:var(--f-latin);font-weight:700;font-size:30px;letter-spacing:.01em;margin:0;line-height:1.1}
+.today{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin-top:8px}
+.today::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--lime)}
+.today b{font-family:var(--f-latin);font-variant-numeric:tabular-nums}
+.hright{display:grid;justify-items:end;gap:8px}
+.iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;position:relative;color:var(--ink)}
+.iconbtn svg{width:22px;height:22px}
+.iconbtn .dot{position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 2px var(--bg)}
+.chead{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:grid;grid-template-columns:72px 1fr 72px;align-items:center;height:54px}
+.chead .t{text-align:center;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chead .t.brand{font-family:var(--f-latin);font-weight:600;letter-spacing:.14em;color:#555}
+.chead .r{justify-self:end}
+.back{display:inline-flex;align-items:center;gap:2px;font-size:13px;color:#444;height:40px}
+.back svg{width:18px;height:18px}
+.chead.shadow{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+/* ---------- mode switch (pass <-> map) ---------- */
+.mode{width:64px;height:34px;border-radius:17px;position:relative;background:var(--lime);transition:background .35s;box-shadow:0 0 0 4px rgba(181,216,15,.25)}
+.mode .knob{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;display:grid;place-items:center;transition:transform .35s cubic-bezier(.4,1.4,.5,1);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.mode .knob svg{width:18px;height:18px}
+.mode[aria-checked="true"]{background:var(--blue);box-shadow:0 0 0 4px rgba(74,155,245,.22)}
+.mode[aria-checked="true"] .knob{transform:translateX(30px)}
+.whiteout{position:fixed;inset:0;z-index:95;background:var(--cream);opacity:0;pointer-events:none;transition:opacity .28s ease}
+.whiteout.on{opacity:1}
+
+/* ---------- frame ---------- */
+.frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28))}
+.frame img.art{position:absolute;object-fit:cover;background:var(--bg3)}
+.frame svg.fr{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.ribbon{position:absolute;width:13%;aspect-ratio:3/4;background:var(--yellow);clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%);z-index:2}
+
+/* ---------- carousel ---------- */
+.car{--iw:min(60vw,272px);display:flex;align-items:center;overflow-x:auto;scroll-snap-type:x mandatory;padding:26px calc((100% - var(--iw))/2) 18px;scrollbar-width:none;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));min-height:calc(var(--iw) * 1.38)}
+.car::-webkit-scrollbar{display:none}
+.car-item{flex:0 0 var(--iw);scroll-snap-align:center;display:grid;place-items:center;transform-origin:center;will-change:transform;padding:0 4px}
+.car-empty{display:grid;justify-items:center;gap:12px;text-align:center;color:var(--muted);padding:60px 16px}
+
+/* ---------- info card ---------- */
+.info{background:var(--bg);border-radius:14px;box-shadow:var(--shadow);border:1px solid var(--line);padding:10px 12px 12px;display:grid;gap:7px}
+.info .ttl{background:var(--bg2);border-radius:10px;text-align:center;font-family:var(--f-latin);font-weight:500;font-size:17px;padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info .cap{margin:0;font-size:12.5px;color:#333;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.info .cap.full{display:block;white-space:pre-wrap}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{background:var(--blue);color:#fff;font-size:10.5px;font-weight:700;border-radius:8px;padding:1px 8px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--muted);align-items:center}
+.meta span{display:inline-flex;align-items:center;gap:3px}
+.meta svg{width:13px;height:13px}
+.meta .pass{color:#6C8A00;font-weight:700}
+.meta .gacha{color:#B47F00;font-weight:700}
+.demo{display:flex;justify-content:center;padding-top:14px}
+.linkbtn{font-size:12px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:16px;background:var(--bg2)}
+.linkbtn svg{width:15px;height:15px}
+.linkbtn:disabled{opacity:.5}
+
+/* ---------- map ---------- */
+.map{position:relative;margin-top:14px;height:calc(100svh - 230px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:360px;max-height:640px;border-radius:22px;overflow:hidden;background:#EEF0F2;touch-action:none;user-select:none}
+.map .world{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .55s cubic-bezier(.3,.9,.3,1)}
+.map .world img{width:900px;height:1100px;max-width:none}
+.pin{position:absolute;width:74px;transform:translate(-50%,-100%);transition:transform .55s cubic-bezier(.3,.9,.3,1),opacity .3s,left .55s cubic-bezier(.3,.9,.3,1),top .55s cubic-bezier(.3,.9,.3,1);display:grid;justify-items:center;gap:8px}
+.map.dragging .world,.map.dragging .pin{transition:none}
+.pin .pdot{width:11px;height:11px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 3px rgba(255,194,52,.3)}
+.pin.sel{transform:translate(-50%,-100%) scale(1.75);z-index:5}
+.map.zoomed .pin:not(.sel){opacity:0;pointer-events:none}
+.map .mcard{position:absolute;left:12px;right:12px;bottom:12px;z-index:8;transform:translateY(130%);transition:transform .45s cubic-bezier(.3,.9,.3,1)}
+.map.zoomed .mcard{transform:none}
+.map .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(255,255,255,.92);font-size:11px;font-weight:700;padding:4px 12px;border-radius:12px;color:#555;white-space:nowrap;transition:opacity .3s}
+.map.zoomed .hint{opacity:0}
+
+/* ---------- pages (pushed screens) ---------- */
+.page{position:fixed;inset:0;z-index:40;background:var(--bg);overflow-y:auto;animation:slide .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes slide{from{transform:translateX(26%);opacity:.3}}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{from{transform:scale(.92);opacity:0}}
+
+/* museum wall */
+.wall{position:relative;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)))}
+.wall::-webkit-scrollbar{display:none}
+.wall .inner{position:relative;height:100%}
+.wall .w{position:absolute;display:block}
+.prog{height:4px;border-radius:2px;background:var(--bg3);margin:18px 8px 0;position:relative;overflow:hidden}
+.prog i{position:absolute;top:0;bottom:0;left:0;border-radius:2px;background:#888}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px 22px;padding-top:16px;align-items:center}
+.wall-owner{display:flex;align-items:center;gap:10px;padding:6px 0 4px}
+.wall-owner img{width:34px;height:34px;border-radius:50%;object-fit:cover}
+.wall-owner b{font-size:14px}
+.wall-owner span{font-size:11px;color:var(--muted);display:block;line-height:1.2}
+
+/* detail */
+.dimg{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:var(--shadow)}
+.dimg img{width:100%;height:auto;max-height:62vh;object-fit:contain;background:var(--bg2)}
+.drow{display:grid;gap:12px;padding-top:12px}
+.place{border-radius:12px;background:var(--bg2);padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px;align-items:center}
+.place svg{width:20px;height:20px;grid-row:span 2}
+.place b{font-size:13px}
+.place.pass svg{color:#7DA000}
+.place.gacha svg{color:#C68A00}
+.place span{color:var(--muted)}
+.byline{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);text-align:left;width:100%}
+.byline img{width:32px;height:32px;border-radius:50%;object-fit:cover}
+.byline div{flex:1;min-width:0;line-height:1.25}
+.byline span{font-size:11px;color:var(--muted)}
+.byline svg{width:16px;height:16px;color:var(--muted)}
+.pillbtns{display:flex;justify-content:center;gap:14px;padding-top:22px}
+.pbtn{height:34px;min-width:92px;padding:0 20px;border-radius:17px;font-size:12.5px;font-weight:700;background:#B9B9B9;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.12)}
+.pbtn.red{background:var(--coral)}
+.pbtn.blue{background:var(--blue)}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(240,240,240,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:fade .2s;padding:24px}
+.dialog{width:min(300px,100%);background:var(--bg);border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,.18);padding:20px 16px 16px;text-align:center;display:grid;gap:6px;animation:pop .22s}
+.dialog h2{font-size:15px;margin:0}
+.dialog p{margin:0 0 10px;font-size:12.5px;color:#555}
+.dialog .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dialog .row button{height:36px;border-radius:18px;background:var(--bg2);font-weight:700;font-size:13px}
+.dialog .row .del{color:var(--coral)}
+
+/* ---------- gacha ---------- */
+.coins{position:absolute;right:0;top:66px;z-index:5;background:var(--blue);color:#fff;border-radius:18px 0 0 18px;height:34px;padding:0 14px 0 6px;display:flex;align-items:center;gap:6px;font-family:var(--f-latin);font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
+.coin{width:24px;height:24px;flex:none}
+.catrow{display:flex;align-items:center;justify-content:center;gap:10px;padding-top:30px}
+.cat{height:38px;min-width:124px;padding:0 22px;border-radius:19px;color:#fff;font-weight:800;font-size:17px;letter-spacing:.04em;transition:background .3s}
+.arrow{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#9a9a9a}
+.arrow svg{width:20px;height:20px}
+.stage{position:relative;height:330px;display:grid;place-items:center;touch-action:pan-y}
+.stage svg.globe{width:300px;height:300px;max-width:100%;overflow:visible;animation:bob 4s ease-in-out infinite;position:relative;z-index:1}
+.stage .shadow{position:absolute;bottom:2px;left:50%;width:210px;height:56px;transform:translateX(-50%);border-radius:50%;background:#A9C1F7;filter:blur(12px);opacity:.85;animation:shadow 4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-10px)}}
+@keyframes shadow{50%{transform:translateX(-50%) scale(.9);opacity:.6}}
+.stage.spin svg.globe{animation:shake .12s linear infinite}
+@keyframes shake{25%{transform:translate(-3px,1px) rotate(-1.5deg)}75%{transform:translate(3px,-1px) rotate(1.5deg)}}
+.gbox{border:2px solid var(--blue);border-radius:16px;padding:10px 14px 12px;display:grid;justify-items:center;gap:6px;margin-top:4px}
+.gbtn{width:100%;max-width:260px;height:42px;border-radius:21px;background:var(--blue);color:#fff;font-weight:800;font-size:17px;letter-spacing:.06em;box-shadow:0 4px 10px rgba(74,155,245,.35)}
+.gbtn:disabled{background:#B9CDE6;box-shadow:none}
+.gline{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
+.gline .coin{width:20px;height:20px}
+.minicat{height:22px;padding:0 14px;border-radius:11px;color:#fff;font-size:11px;font-weight:800;display:inline-grid;place-items:center}
+.gsub{font-size:11px;font-weight:700}
+.gnote{font-size:11px;color:var(--muted);text-align:center;margin:8px 0 0}
+
+/* draw overlay */
+.draw{position:fixed;inset:0;z-index:85;background:rgba(255,248,232,.97);display:grid;place-items:center;overflow:hidden;animation:fade .3s}
+.draw .rays{position:absolute;width:900px;height:900px;left:50%;top:40%;margin:-450px 0 0 -450px;background:repeating-conic-gradient(rgba(255,194,52,.28) 0 9deg,transparent 9deg 22deg);border-radius:50%;opacity:0;animation:rays 1s .9s forwards,turn 18s linear infinite;-webkit-mask:radial-gradient(circle,#000 20%,transparent 68%);mask:radial-gradient(circle,#000 20%,transparent 68%)}
+@keyframes rays{to{opacity:1}}
+@keyframes turn{to{rotate:360deg}}
+.draw .col{position:relative;display:grid;justify-items:center;gap:16px;width:min(320px,86vw);padding:0 16px}
+.env{position:relative;width:220px;height:150px;margin-top:150px;animation:fly .8s cubic-bezier(.2,1.3,.4,1) both}
+@keyframes fly{from{transform:translate(0,-38vh) scale(.15) rotate(-30deg);opacity:0}}
+.env .back2{position:absolute;inset:0;background:#EFE8DA;border-radius:8px;z-index:1}
+.env .body{position:absolute;inset:0;background:#FFFFFF;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:3;clip-path:polygon(0 0,50% 52%,100% 0,100% 100%,0 100%)}
+.env .flap{position:absolute;left:0;right:0;top:0;height:60%;background:#F6F1E6;clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top;z-index:4;animation:flap .45s .85s ease-in forwards}
+.env .seal{position:absolute;left:50%;top:48%;width:26px;height:26px;margin:-13px;border-radius:50%;background:var(--coral);z-index:5;animation:sealoff .2s .8s forwards;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+@keyframes flap{to{transform:rotateX(180deg);z-index:0}}
+@keyframes sealoff{to{transform:scale(0)}}
+.env .card{position:absolute;left:50%;bottom:10px;width:150px;margin-left:-75px;z-index:2;animation:rise .9s 1.25s cubic-bezier(.2,1.2,.4,1) both}
+@keyframes rise{from{transform:translateY(0) scale(.6)}to{transform:translateY(-170px) scale(1.2)}}
+.draw .txt{display:grid;justify-items:center;gap:4px;text-align:center;animation:fade .4s 2s both}
+.draw .txt small{font-size:12px;color:#9a7a2a;font-weight:700;letter-spacing:.08em;font-family:var(--f-latin)}
+.draw .txt b{font-family:var(--f-latin);font-size:22px;font-weight:600}
+.draw .txt span{font-size:12px;color:#666}
+.draw .btns{display:flex;gap:12px;animation:fade .4s 2.2s both}
+
+/* ---------- my page ---------- */
+.prof{display:flex;align-items:center;gap:14px;padding-top:10px}
+.prof .av{width:50px;height:50px;border-radius:50%;object-fit:cover;background:var(--bg3);flex:none}
+.prof .nm{flex:1;min-width:0;line-height:1.25}
+.prof .nm b{font-family:var(--f-latin);font-size:18px;font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.prof .nm b svg{width:16px;height:16px;color:var(--lime)}
+.prof .nm span{display:block;font-size:11px;color:var(--muted)}
+.editbtn{height:30px;padding:0 14px;border-radius:15px;border:1px solid var(--line);font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(0,0,0,.05);white-space:nowrap}
+.editbtn svg{width:13px;height:13px}
+.ptabs{display:grid;grid-template-columns:1fr 1fr;margin-top:16px;border-bottom:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)))}
+.ptabs button{height:40px;font-size:12px;font-weight:700;color:#777;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ptabs button[aria-selected="true"]{color:var(--coral);border-bottom-color:var(--coral)}
+.filt{display:flex;gap:6px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}
+.filt::-webkit-scrollbar{display:none}
+.filt button{flex:none;height:24px;padding:0 12px;border-radius:12px;background:var(--bg2);font-size:11px;font-weight:700;color:#777}
+.filt button[aria-pressed="true"]{background:var(--coral);color:#fff}
+.album{display:block;width:100%;background:var(--bg2);border-radius:16px;padding:10px 12px 0;margin-top:14px;text-align:left;overflow:hidden}
+.album .ah{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:700;color:#444}
+.album .ah span{display:inline-flex;align-items:center;gap:4px}
+.album .ah svg{width:14px;height:14px}
+.collage{position:relative;height:150px;margin-top:4px}
+.collage .c{position:absolute;bottom:-14px}
+.fab{position:fixed;z-index:35;right:max(20px,calc((100vw - 480px)/2 + 20px));bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 26px);width:54px;height:54px;border-radius:50%;background:var(--coral);color:#fff;display:grid;place-items:center;box-shadow:0 6px 16px rgba(244,85,59,.4)}
+.fab svg{width:26px;height:26px}
+.empty{padding:36px 12px;text-align:center;color:var(--muted);font-size:13px;display:grid;justify-items:center;gap:12px}
+.places{display:grid;gap:8px;margin-top:22px}
+.places h3{font-size:12px;margin:0;color:#555}
+.prow{display:flex;align-items:center;gap:10px;font-size:12px;padding:8px 10px;border-radius:12px;background:var(--bg2);text-align:left;width:100%}
+.prow svg{width:18px;height:18px;color:#7DA000;flex:none}
+.prow div{flex:1;min-width:0;line-height:1.3}
+.prow b{display:block;font-size:13px}
+.prow span{color:var(--muted)}
+.prow em{font-style:normal;font-family:var(--f-latin);font-weight:600;font-size:13px}
+
+/* form */
+.formimg{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:var(--shadow);display:grid;place-items:center;min-height:180px;cursor:pointer;text-align:center;color:var(--muted);font-size:12px;gap:6px}
+.formimg img{width:100%;max-height:300px;object-fit:contain;background:var(--bg2)}
+.formimg.drag{outline:2px dashed var(--blue)}
+.formimg .ic{width:30px;height:30px;color:#bbb}
+.fld{background:#DADADA;border-radius:10px;padding:8px 10px;display:grid;gap:2px;position:relative}
+.fld label{font-size:11.5px;font-weight:700;color:#555;display:flex;align-items:center;gap:4px}
+.fld label svg{width:13px;height:13px}
+.fld input,.fld textarea{border:0;background:transparent;outline:none;width:100%;font-size:14px;resize:none}
+.fld textarea{min-height:52px}
+.fld .cnt{position:absolute;right:10px;top:9px;font-size:10px;color:#777;font-family:var(--f-latin)}
+.fld .cnt.b{top:auto;bottom:6px}
+.fld:focus-within{box-shadow:0 0 0 2px var(--blue)}
+.tagsearch{display:flex;align-items:center;gap:6px}
+.tagsearch svg{width:14px;height:14px;color:#555;flex:none}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;padding-top:6px}
+.sugg button{font-size:11px;font-weight:700;border-radius:10px;padding:2px 10px;background:#fff;color:#555}
+.chosen{display:flex;flex-wrap:wrap;gap:6px}
+.chosen button{background:var(--blue);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:2px 6px 2px 10px;display:inline-flex;align-items:center;gap:2px}
+.chosen svg{width:12px;height:12px}
+.trow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12.5px;margin-top:10px}
+.sw{width:42px;height:24px;border-radius:12px;background:#C9C9C9;position:relative;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.sw[aria-checked="true"]{background:var(--lime)}
+.sw[aria-checked="true"]::after{transform:translateX(18px)}
+.err{color:var(--coral);font-size:12px;margin:0;text-align:center}
+.done{display:flex;justify-content:center;padding-top:20px}
+.done .pbtn{background:#F01E14;min-width:84px}
+
+/* settings */
+.search{display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:0 12px;height:38px;margin-top:4px}
+.search svg{width:17px;height:17px;color:var(--muted);flex:none}
+.search input{border:0;background:transparent;flex:1;min-width:0;outline:none}
+.sgroup{padding-top:16px}
+.sgroup h3{font-size:11.5px;font-weight:700;color:var(--muted);margin:0 0 2px 2px}
+.sgroup p{font-size:13px}
+.srow{display:flex;align-items:center;gap:14px;width:100%;min-height:50px;padding:6px 2px;text-align:left}
+.srow>svg:first-child{width:22px;height:22px;flex:none}
+.srow .lbl{flex:1;min-width:0;line-height:1.35;font-size:14px}
+.srow .lbl small{display:block;color:var(--muted);font-size:11.5px}
+.srow .val{color:var(--muted);font-size:12px;white-space:nowrap}
+.srow .chev{width:16px;height:16px;color:#bbb;flex:none}
+.srow.red{color:var(--coral)}
+.sep{height:8px;background:var(--bg2);margin:14px calc(-1 * max(16px,env(safe-area-inset-right,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-left,0px)))}
+.radio{display:flex;align-items:center;gap:12px;width:100%;padding:12px 2px;text-align:left;border-bottom:1px solid var(--line)}
+.radio .lbl{flex:1}
+.radio .lbl small{display:block;color:var(--muted);font-size:11.5px}
+.radio .o{width:20px;height:20px;border-radius:50%;border:2px solid #bbb;flex:none;display:grid;place-items:center}
+.radio[aria-checked="true"] .o{border-color:var(--coral)}
+.radio[aria-checked="true"] .o::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--coral)}
+.help{font-size:12px;color:var(--muted);margin:10px 2px 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding-top:6px}
+.chips button{height:28px;padding:0 12px;border-radius:14px;background:var(--bg2);font-size:12px;font-weight:700;color:#666}
+.chips button[aria-pressed="true"]{background:var(--blue);color:#fff}
+.inp{width:100%;border:0;background:var(--bg2);border-radius:10px;padding:10px 12px;font-size:14px}
+.inp:focus{outline:2px solid var(--blue)}
+.flabel{font-size:11.5px;font-weight:700;color:#666;display:block;margin:0 0 4px 2px}
+.brand-big{font-family:var(--f-latin);font-weight:700;font-size:40px;letter-spacing:.14em;text-align:center;padding-top:30px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;padding:12px 2px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.nrow{display:flex;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);align-items:center;width:100%;text-align:left}
+.nrow img{width:38px;height:48px;object-fit:cover;border-radius:4px;flex:none}
+.nrow div{flex:1;font-size:13px;line-height:1.4}
+.nrow span{font-size:11px;color:var(--muted);display:block}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);z-index:99;background:rgba(18,18,18,.92);color:#fff;padding:9px 16px;border-radius:14px;font-size:12.5px;width:max-content;max-width:min(420px,calc(100% - 32px));animation:pop .2s;text-align:center}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition:none!important}}
+</style>
+
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b4b4b"/><stop offset=".45" stop-color="#1b1b1b"/><stop offset=".7" stop-color="#2e2e2e"/><stop offset="1" stop-color="#0e0e0e"/></linearGradient>
+  <radialGradient id="ocean" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#7FD6FF"/><stop offset=".45" stop-color="#1E90EC"/><stop offset="1" stop-color="#0B4DB8"/></radialGradient>
+  <radialGradient id="gloss" cx=".32" cy=".26" r=".42"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  <radialGradient id="rim" cx=".5" cy=".5" r=".5"><stop offset=".78" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#05306f" stop-opacity=".45"/></radialGradient>
+  <linearGradient id="coinG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a9a9a"/><stop offset="1" stop-color="#3d3d3d"/></linearGradient>
+  <clipPath id="globeClip"><circle cx="150" cy="150" r="100"/></clipPath>
+</defs></svg>
+
+<div id="root"></div>
+<div id="pages"></div>
+<div class="nav"><nav id="nav" aria-label="メインメニュー"></nav></div>
+<div id="fx"></div>
+<div class="whiteout" id="whiteout"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================= icons ================= */
+const I = {
+  home:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.8 11h2.7v9.3h5v-6h3v6h5V11h2.7z"/></svg>',
+  gacha:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.4 12h17.2a8.6 8.6 0 0 1-17.2 0z" fill="currentColor"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.3 18.4c1.3-2.3 3.3-3.4 5.7-3.4s4.4 1.1 5.7 3.4"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.3 3h3.4l.5 2.4 1.7.9 2.3-.8 1.7 2.9-1.8 1.6v2l1.8 1.6-1.7 2.9-2.3-.8-1.7.9-.5 2.4h-3.4l-.5-2.4-1.7-.9-2.3.8-1.7-2.9L5.9 13v-2L4.1 9.4l1.7-2.9 2.3.8 1.7-.9z"/><circle cx="12" cy="12" r="2.8"/></svg>',
+  museum:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 9 12 4l9 5zM5 9v8M9.5 9v8M14.5 9v8M19 9v8M3 20h18"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6.5 16V11a5.5 5.5 0 0 1 11 0v5l1.5 1.8H5zM10 20.3h4"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="#121212" stroke-width="1.8"><rect x="7" y="3.5" width="10" height="17" rx="2.2"/><path d="M4 9v6M20 9v6" stroke-linecap="round"/></svg>',
+  mappin:'<svg viewBox="0 0 24 24" fill="none" stroke="#4A9BF5" stroke-width="1.9"><path d="M12 15.5s-4.2-4-4.2-7.1a4.2 4.2 0 0 1 8.4 0c0 3.1-4.2 7.1-4.2 7.1z" fill="#F4553B" stroke="none"/><circle cx="12" cy="8.4" r="1.6" fill="#fff" stroke="none"/><ellipse cx="12" cy="17.5" rx="6" ry="2.2"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6 8.5 12l6 6"/></svg>',
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>',
+  left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6 8.5 12l6 6"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>',
+  grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>',
+  wall:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="8" height="10" rx="1"/><rect x="13" y="9" width="8" height="7" rx="1"/><path d="M3 19.5h18"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 19.5s-7-4.3-7-9.5A4 4 0 0 1 12 7.6 4 4 0 0 1 19 10c0 5.2-7 9.5-7 9.5z"/></svg>',
+  pics:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m4 17 5-5 4 4 2.5-2.5L20 18"/><circle cx="15.5" cy="9.5" r="1.5"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>',
+  pass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 20h4L19 9l-4-4L4 16zM16.5 3.5l4 4 1-1a1.4 1.4 0 0 0 0-2l-2-2a1.4 1.4 0 0 0-2 0z"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 20 5.5v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10v-6z"/><path d="m8.3 12 2.6 2.6 4.9-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5-5 4 4 3-3 4.5 4.5"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>',
+  block:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg>',
+  data:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></svg>',
+  help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.5"/><circle cx="12" cy="16.8" r=".6" fill="currentColor"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></svg>',
+  key:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16.5 6.5l2 2M14.5 8.5l1.5 1.5"/></svg>',
+  logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h8M10 12h10.5M17 8.5l3.5 3.5-3.5 3.5"/></svg>',
+  coin:'<svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="url(#coinG)"/><circle cx="12" cy="12" r="8.6" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/><path d="M15.8 6.2c.6-.5 1.5.3 1 .9l-4.6 5.6-1.3-1.1zM10.3 12.2l1.4 1.2c-.4 1.7-1.7 3-4 3.3.9-.9.7-2.4 1.2-3.3.3-.6.8-1 1.4-1.2z" fill="#fff"/></svg>',
+};
+
+/* ================= utils ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const todayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pick = (a, r = Math.random) => a[Math.floor(r() * a.length)];
+const hash = s => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const jdate = ts => { const d = new Date(ts); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+function ago(ts){ const m = Math.round((Date.now() - ts) / 60000); if (m < 1) return 'たった今'; if (m < 60) return `${m}分前`; const h = Math.round(m/60); if (h < 24) return `${h}時間前`; return `${Math.round(h/24)}日前`; }
+function toast(msg){ const t = $('#toast'); t.innerHTML = `<div class="toast">${esc(msg)}</div>`; clearTimeout(toast.t); toast.t = setTimeout(() => t.innerHTML = '', 2600); }
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= generated artwork (stand-ins for real works) ================= */
+const PALETTES = [
+  ['#F2E8DA','#E4572E','#29335C','#F3A712','#669BBC'],['#0B132B','#3A506B','#5BC0BE','#F0F3BD','#E07A5F'],
+  ['#FFF5EB','#2D3047','#FF9B71','#E84855','#1B998B'],['#E9F1F7','#1C3144','#D00000','#FFBA08','#3F88C5'],
+  ['#F7F3E3','#6F1A07','#2B2118','#A8763E','#AF9164'],['#4B3F72','#FFC857','#119DA4','#19647E','#E9E3D5'],
+  ['#EDF2F4','#2B2D42','#8D99AE','#EF233C','#D90429'],['#FCEFEF','#7FD8BE','#5BA4D9','#FCD29F','#FCAB64'],
+  ['#10002B','#5A189A','#9D4EDD','#E0AAFF','#FF9E00'],['#F4F1DE','#3D405B','#81B29A','#F2CC8F','#E07A5F'],
+];
+const artCache = new Map();
+function art(seed, style, aspect = [4,5], base = 520){
+  const w = Math.round(base), h = Math.round(base * aspect[1] / aspect[0]);
+  const key = `${seed}:${style}:${w}x${h}`; if (artCache.has(key)) return artCache.get(key);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); const r = rng(seed); const P = PALETTES[Math.floor(r() * PALETTES.length)];
+  g.fillStyle = P[0]; g.fillRect(0, 0, w, h);
+  if (style === 0){ for (let i = 0; i < 9; i++){ g.globalAlpha = .55 + r()*.45; g.fillStyle = P[1 + Math.floor(r()*4)]; g.beginPath(); g.arc(r()*w, r()*h, 30 + r()*w*.3, 0, 7); g.fill(); } }
+  else if (style === 1){ const cols = 3, rows = Math.max(2, Math.round(3*h/w)), cw = w/cols, ch = h/rows;
+    for (let x = 0; x < cols; x++) for (let y = 0; y < rows; y++){ g.fillStyle = P[Math.floor(r()*5)]; g.fillRect(x*cw, y*ch, cw+1, ch+1); g.fillStyle = P[1 + Math.floor(r()*4)]; const t = Math.floor(r()*4); g.beginPath();
+      if (t === 0){ g.save(); g.rect(x*cw, y*ch, cw, ch); g.clip(); g.beginPath(); g.arc(x*cw + (r()<.5?0:cw), y*ch + (r()<.5?0:ch), Math.min(cw,ch), 0, 7); g.fill(); g.restore(); }
+      else if (t === 1){ g.arc(x*cw + cw/2, y*ch + ch/2, Math.min(cw,ch)*.32, 0, 7); g.fill(); }
+      else if (t === 2){ g.moveTo(x*cw, y*ch + ch); g.lineTo(x*cw + cw, y*ch + ch); g.lineTo(x*cw + (r()<.5?0:cw), y*ch); g.fill(); }
+      else g.fillRect(x*cw + cw*.2, y*ch + ch*.2, cw*.6, ch*.6); } }
+  else if (style === 2){ for (let i = 0; i < 8; i++){ g.globalAlpha = .3 + r()*.4; g.fillStyle = P[1 + Math.floor(r()*4)]; g.beginPath(); const y0 = r()*h, a = 20 + r()*70, f = .005 + r()*.02, ph = r()*6;
+      g.moveTo(0, h); for (let x = 0; x <= w; x += 8) g.lineTo(x, y0 + Math.sin(x*f + ph)*a); g.lineTo(w, h); g.fill(); } }
+  else if (style === 3){ const sky = g.createLinearGradient(0,0,0,h); sky.addColorStop(0, P[0]); sky.addColorStop(1, P[4]); g.fillStyle = sky; g.fillRect(0,0,w,h);
+    g.fillStyle = P[3]; g.beginPath(); g.arc(w*(.2 + r()*.6), h*(.18 + r()*.2), w*(.08 + r()*.08), 0, 7); g.fill();
+    for (let l = 0; l < 4; l++){ g.fillStyle = P[1 + (l % 3)]; g.globalAlpha = .7 + l*.1; g.beginPath(); const base = h*(.45 + l*.13); g.moveTo(0, h);
+      for (let x = 0; x <= w; x += 10) g.lineTo(x, base + Math.sin(x*.012 + l*2 + r()*.3)*30 - Math.cos(x*.03 + l)*12); g.lineTo(w, h); g.fill(); } }
+  else if (style === 4){ const n = 12, s = Math.floor(w / n), rowsN = Math.floor(h / s), offY = Math.floor((h - s*rowsN)/2);
+    for (let y = 1; y < rowsN - 1; y++) for (let x = 0; x < n/2; x++){ if (r() < .5 - Math.abs(x - n/2)*.04){ g.fillStyle = P[1 + Math.floor(r()*4)]; g.fillRect(x*s, offY + y*s, s, s); g.fillRect((n-1-x)*s, offY + y*s, s, s); } } }
+  else { g.lineCap = 'round'; for (let i = 0; i < 50; i++){ g.globalAlpha = .5 + r()*.5; g.strokeStyle = P[1 + Math.floor(r()*4)]; g.lineWidth = 6 + r()*26; g.beginPath(); const x = r()*w, y = r()*h, a = r()*Math.PI;
+      g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a)*80, y + Math.sin(a)*80 + 30, x + Math.cos(a)*170, y + Math.sin(a)*170); g.stroke(); } }
+  g.globalAlpha = .06; for (let i = 0; i < 1500; i++){ g.fillStyle = r() < .5 ? '#000' : '#fff'; g.fillRect(r()*w, r()*h, 1.5, 1.5); }
+  const url = c.toDataURL('image/jpeg', .86); artCache.set(key, url); return url;
+}
+const src = w => w.img || art(w.seed, w.style, w.aspect);
+
+/* ================= baroque frame ================= */
+function frameSVG(W, H){
+  const t = Math.min(W, H) * .11, d = t * .45, k = t * .42;
+  const star = (x, y, s) => `M${x},${y-s}Q${x},${y} ${x+s},${y}Q${x},${y} ${x},${y+s}Q${x},${y} ${x-s},${y}Q${x},${y} ${x},${y-s}Z`;
+  const outer = `M0,0Q${W/4},${d} ${W/2},0Q${3*W/4},${d} ${W},0Q${W-d},${H/4} ${W},${H/2}Q${W-d},${3*H/4} ${W},${H}Q${3*W/4},${H-d} ${W/2},${H}Q${W/4},${H-d} 0,${H}Q${d},${3*H/4} 0,${H/2}Q${d},${H/4} 0,0Z`;
+  const hole = `M${t},${t}V${H-t}H${W-t}V${t}Z`;
+  const bulbs = [[0,0],[W,0],[W,H],[0,H]].map(([x,y]) => `<circle cx="${x + (x ? -k*.55 : k*.55)}" cy="${y + (y ? -k*.55 : k*.55)}" r="${k}" fill="url(#fgrad)"/>`).join('');
+  const stars = [[t*.42,t*.42,t*.36],[W-t*.42,t*.42,t*.36],[W-t*.42,H-t*.42,t*.36],[t*.42,H-t*.42,t*.36],[W/2,t*.38,t*.27],[W/2,H-t*.38,t*.27],[t*.38,H/2,t*.27],[W-t*.38,H/2,t*.27]].map(a => star(...a)).join('');
+  return `<svg class="fr" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${bulbs}<path d="${outer}${hole}" fill="url(#fgrad)" fill-rule="evenodd"/>
+    <rect x="${t*.5}" y="${t*.5}" width="${W-t}" height="${H-t}" fill="none" stroke="#6b6b6b" stroke-width="${t*.07}" rx="${t*.15}"/>
+    <rect x="${t-1}" y="${t-1}" width="${W-2*t+2}" height="${H-2*t+2}" fill="none" stroke="#9a9a9a" stroke-width="2"/>
+    <rect x="${t*.82}" y="${t*.82}" width="${W-t*1.64}" height="${H-t*1.64}" fill="none" stroke="#000" stroke-opacity=".6" stroke-width="${t*.12}"/>
+    <path d="${stars}" fill="#D9D1C1"/></svg>`;
+}
+function frame(w, opts = {}){
+  const W = 400, H = Math.round(400 * w.aspect[1] / w.aspect[0]) + 20, t = Math.min(W, H) * .11;
+  return `<div class="frame" style="aspect-ratio:${W}/${H}">
+    <img class="art" src="${src(w)}" alt="${esc(w.title)}" style="left:${t/W*100}%;top:${t/H*100}%;width:${(W-2*t)/W*100}%;height:${(H-2*t)/H*100}%" loading="lazy" draggable="false">
+    ${frameSVG(W, H)}${opts.ribbon ? `<span class="ribbon" style="left:${t/W*100 + 4}%;top:${t/H*100}%" title="すれ違いのサムネ"></span>` : ''}</div>`;
+}
+
+/* ================= sample world ================= */
+const TAGS = ['イラスト','水彩画','油彩画','デジタルアート','オリジナル','ファンアート','ドット絵','抽象画','風景','写真','版画','キャラクター'];
+const STYLE_BY_TAG = { '水彩画':[2,3],'油彩画':[5],'抽象画':[0,1],'風景':[3],'写真':[3],'ドット絵':[4],'版画':[1],'デジタルアート':[0,1,4],'イラスト':[0,3,5],'キャラクター':[4] };
+const ASPECTS = [[4,5],[4,5],[3,4],[1,1],[4,3],[3,2]];
+const ARTISTS = [
+  {name:'霧島ねね',handle:'nene_kirishima'},{name:'みなと',handle:'minato.draws'},{name:'Sora Ito',handle:'sora_ito'},
+  {name:'pino',handle:'pino_pixel'},{name:'藍',handle:'ai_indigo'},{name:'mochi',handle:'mochi_draws'},
+  {name:'Hal',handle:'hal.prints'},{name:'夜行',handle:'yako_nightwalk'},{name:'つむぎ',handle:'tsumugi_art'},
+  {name:'Kaito M.',handle:'kaito_m'},{name:'ゆずき',handle:'yuzuki_wc'},{name:'森のひと',handle:'morinohito'},
+];
+const TITLES = ['THE TOWER','午後の温室','記憶の地図','青い通り道','眠れない月','窓辺のリズム','見知らぬ駅','あたらしい季節','雨上がりの交差点','小さな惑星','夏の終わりの音','ひかりの粒','帰り道の色','遠くの灯台','紙の森','声のかたち','STRAWBERRY','FIELD','NIGHT SWIM','いちごの午後'];
+const DESCS = ['通学路で見た夕方の光を思い出しながら描きました。','色の重なりで「待ち時間」を表現しています。','旅先のスケッチを家で描き直した一枚です。','気に入っている配色で、ひたすら手を動かしました。','すれ違った誰かの記憶に残ったらうれしいです。','最近の制作テーマは「余白」です。','タロットカードをモチーフにしたシリーズの一枚です。'];
+const PLACES = [
+  {name:'東京ビッグサイト（コミケ会場）',city:'東京都江東区',lat:35.6298,lng:139.7942},{name:'京都・鴨川デルタ',city:'京都市左京区',lat:35.0302,lng:135.7718},
+  {name:'大阪・中之島',city:'大阪市北区',lat:34.6930,lng:135.4950},{name:'金沢21世紀美術館 前',city:'石川県金沢市',lat:36.5608,lng:136.6582},
+  {name:'福岡・天神地下街',city:'福岡市中央区',lat:33.5911,lng:130.3990},{name:'札幌・大通公園',city:'札幌市中央区',lat:43.0598,lng:141.3478},
+  {name:'那覇・国際通り',city:'沖縄県那覇市',lat:26.2155,lng:127.6850},{name:'渋谷駅 ハチ公口',city:'東京都渋谷区',lat:35.6590,lng:139.7006},
+  {name:'直島・宮浦港',city:'香川県直島町',lat:34.4600,lng:133.9956},{name:'大阪芸術大学 前',city:'大阪府南河内郡',lat:34.4858,lng:135.5994},
+];
+function makeWork(r = Math.random, artist, tagPool){
+  const tags = [tagPool && tagPool.length ? pick(tagPool, r) : pick(TAGS, r)];
+  for (const t of [pick(TAGS, r), 'オリジナル']) if (r() < .55 && !tags.includes(t)) tags.push(t);
+  const styles = STYLE_BY_TAG[tags[0]] || [0,1,2,3,4,5];
+  return { id: uid(), seed: Math.floor(r()*1e9), style: pick(styles, r), aspect: pick(ASPECTS, r), title: pick(TITLES, r), desc: pick(DESCS, r), tags, artist: artist || pick(ARTISTS, r), at: Date.now() - Math.floor(r()*90)*86400e3 };
+}
+// An artist's museum: a fixed set of works; the first is their current pass thumbnail
+function museumOf(artist){
+  const r = rng(hash(artist.handle)); const n = 4 + Math.floor(r()*4); const list = [];
+  for (let i = 0; i < n; i++){ const w = makeWork(r, artist); w.id = artist.handle + ':' + i; list.push(w); }
+  return list;
+}
+
+/* ================= state ================= */
+const KEY = 'artoro.v2';
+const GACHA_CATS = [
+  { label:'ランダム', color:'#FFC234', tags:null, props:['envelope','kraft','letter'] },
+  { label:'水彩画', color:'#A6CE0E', tags:['水彩画'], props:['wpalette','cups'] },
+  { label:'油彩画', color:'#F4553B', tags:['油彩画'], props:['opalette','tubes'] },
+  { label:'イラスト', color:'#9B6CF0', tags:['イラスト','キャラクター'], props:['pencil','sketchbook'] },
+  { label:'デジタルアート', color:'#18B0A2', tags:['デジタルアート','ドット絵'], props:['tablet','pixel'] },
+  { label:'写真', color:'#F06BA8', tags:['写真','風景'], props:['camera','film'] },
+];
+function seedState(){
+  const r = rng(2026), now = Date.now(), collection = [];
+  const plan = [[0,.15],[9,.6],[2,1.4],[3,3],[7,5],[null,7],[1,30],[null,32],[4,52],[8,80],[null,100],[5,150],[6,220]];
+  plan.forEach(([pi, hrs], i) => {
+    const artist = ARTISTS[i % ARTISTS.length]; const w = museumOf(artist)[0];
+    collection.push({ id: uid(), source: pi === null ? 'gacha' : 'pass', place: pi === null ? null : PLACES[pi], at: now - hrs*3600e3, work: w });
+  });
+  return {
+    me: { name:'ME', handle:'me_artoro', bio:'イラストと版画をつくっています。', avatarSeed: 99, private:false },
+    myWorks: [
+      { id: uid(), title:'放課後の踊り場', desc:'校舎の階段で見た光。', tags:['イラスト','水彩画'], seed: 4411, style: 5, aspect:[3,4], at: now - 86400e3*6 },
+      { id: uid(), title:'ふたり', desc:'友だちと撮った写真をもとに描きました。', tags:['イラスト','オリジナル'], seed: 9123, style: 0, aspect:[4,3], at: now - 86400e3*20 },
+      { id: uid(), title:'くり返し', desc:'版画の試し刷り。', tags:['版画'], seed: 3141, style: 1, aspect:[4,5], at: now - 86400e3*40 },
+    ],
+    thumbId: null, collection, following: [], blocked: [], notifications: [],
+    passLog: { date: todayKey(), count: 5 },
+    coins: { date: todayKey(), n: 5 },
+    settings: { passMode:true, dailyLimit:20, receiveTags:[], location:'city', notifyPass:true, notifyGacha:true },
+  };
+}
+let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
+if (!S || !S.me) S = seedState();
+if (!S.myWorks.some(w => w.id === S.thumbId)) S.thumbId = S.myWorks[0]?.id || null;
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast('この端末に保存できませんでした。画像を小さくして試してください。'); } }
+function rollDay(){ const t = todayKey(); if (S.coins.date !== t) S.coins = { date:t, n:5 }; if (S.passLog.date !== t) S.passLog = { date:t, count:0 }; }
+rollDay();
+
+const UI = { tab:'home', homeMode:'pass', carIndex:0, ptab:'mine', pfilter:'all', cat:0, pages:[], selPin:null, sq:'' };
+const isBlocked = h => S.blocked.some(b => b.handle === h);
+const coll = () => S.collection.filter(c => !isBlocked(c.work.artist.handle)).sort((a,b) => b.at - a.at);
+const thumbWork = () => S.myWorks.find(w => w.id === S.thumbId);
+const meAv = () => art(S.me.avatarSeed, 0, [1,1], 140);
+const artistAv = a => art(hash(a.handle), 0, [1,1], 120);
+function homeItems(){ const t = todayKey(); const passes = coll().filter(c => c.source === 'pass'); const today = passes.filter(c => todayKey(new Date(c.at)) === t); return { list: today.length ? today : passes.slice(0, 8), today: !!today.length }; }
+
+/* ================= shared pieces ================= */
+function navHTML(){
+  return [['home','home','ホーム'],['gacha','gacha','ガチャ'],['me','user','マイページ'],['settings','gear','設定']]
+    .map(([k, ic, l]) => `<button data-tab="${k}" aria-label="${l}" ${UI.tab === k ? 'aria-current="page"' : ''}>${I[ic]}</button>`).join('');
+}
+function infoCard(c, opts = {}){
+  const w = c.work || c; const loc = S.settings.location;
+  const placeBit = c.source === 'pass' ? `<span class="pass">${I.pin}${loc === 'off' ? 'すれ違い' : esc(c.place.name)}</span>` : c.source === 'gacha' ? `<span class="gacha">${I.gacha}ガチャ</span>` : '';
+  return `<div class="info">
+    <div class="ttl">${esc(w.title)}</div>
+    <p class="cap ${opts.full ? 'full' : ''}">${esc(w.desc)}</p>
+    <div class="tags">${w.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>
+    <div class="meta">${placeBit}<span>${jdate(c.at || w.at)}</span>${w.artist ? `<span>@${esc(w.artist.handle)}</span>` : ''}</div></div>`;
+}
+
+/* ================= HOME ================= */
+function viewHome(){
+  const { list, today } = homeItems(); const map = UI.homeMode === 'map';
+  UI.carIndex = Math.min(UI.carIndex, Math.max(0, list.length - 1));
+  const unread = S.notifications.some(n => !n.read);
+  const head = `<div class="hhead"><div><h1>HOME</h1><div class="today" id="todayLbl">${today ? '今日の作品' : '最近の作品'} <b>${list.length ? (map ? list.length : UI.carIndex + 1) + ' / ' + list.length : '0'}</b></div></div>
+    <div class="hright"><button class="iconbtn" data-act="notifs" aria-label="お知らせ">${I.bell}${unread ? '<span class="dot"></span>' : ''}</button>
+      <button class="mode" role="switch" aria-checked="${map}" aria-label="地図で見る" data-act="mode"><span class="knob">${map ? I.mappin : I.phone}</span></button></div></div>`;
+  if (map) return `<div class="app wrap pad-nav">${head}${mapHTML()}</div>`;
+  const body = list.length ? `<div class="car" id="car">${list.map((c, i) => `<button class="car-item" data-ci="${i}" aria-label="${esc(c.work.title)}／${esc(c.work.artist.name)}の美術館へ">${frame(c.work)}</button>`).join('')}</div>
+      <div id="carInfo">${infoCard(list[UI.carIndex])}</div>`
+    : `<div class="car-empty">まだ誰ともすれ違っていません。<br>すれ違い通信をオンにして出かけてみましょう。</div>`;
+  return `<div class="app wrap pad-nav">${head}${body}
+    <div class="demo"><button class="linkbtn" data-act="simulate" ${S.settings.passMode ? '' : 'disabled'}>${I.pass}${S.settings.passMode ? 'すれ違いを試す（デモ）' : 'すれ違い通信はオフです（設定で変更）'}</button></div></div>`;
+}
+
+/* ---------- map ---------- */
+let mapImg = null;
+function mapImage(){
+  if (mapImg) return mapImg;
+  const W = 900, H = 1100, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); const r = rng(77);
+  g.fillStyle = '#EDEFF2'; g.fillRect(0,0,W,H);
+  g.fillStyle = '#E3E6EA'; for (let i = 0; i < 160; i++) g.fillRect(r()*W, r()*H, 30 + r()*70, 24 + r()*60);
+  g.fillStyle = '#D9EAD9'; for (let i = 0; i < 9; i++){ const x = r()*W, y = r()*H, w = 60 + r()*120, h = 50 + r()*110; g.beginPath(); g.moveTo(x+14,y); g.arcTo(x+w,y,x+w,y+h,14); g.arcTo(x+w,y+h,x,y+h,14); g.arcTo(x,y+h,x,y,14); g.arcTo(x,y,x+w,y,14); g.fill(); }
+  g.strokeStyle = '#CCD8E6'; g.lineWidth = 46; g.lineCap = 'round'; g.beginPath(); g.moveTo(-40, H*.72); g.bezierCurveTo(W*.3, H*.58, W*.55, H*.95, W+40, H*.8); g.stroke();
+  const road = (wd, edge) => { g.lineWidth = wd + 3; g.strokeStyle = edge; g.stroke(); g.lineWidth = wd; g.strokeStyle = '#FFFFFF'; g.stroke(); };
+  for (let i = 0; i < 26; i++){ g.beginPath(); const vert = r() < .5; const p = r() * (vert ? W : H), a = (r() - .5) * .5;
+    if (vert){ g.moveTo(p, -10); g.lineTo(p + a*H, H+10); } else { g.moveTo(-10, p); g.lineTo(W+10, p + a*W); } road(5 + r()*4, '#E2E5E9'); }
+  for (let i = 0; i < 5; i++){ g.beginPath(); g.moveTo(-20, r()*H); g.bezierCurveTo(W*.3, r()*H, W*.7, r()*H, W+20, r()*H); road(14, '#D8DCE2'); }
+  for (let i = 0; i < 3; i++){ g.beginPath(); g.moveTo(r()*W, -20); g.bezierCurveTo(r()*W, H*.3, r()*W, H*.7, r()*W, H+20); road(16, '#D8DCE2'); }
+  mapImg = c.toDataURL('image/jpeg', .85); return mapImg;
+}
+const MAPV = { s:.6, x:0, y:0 };
+function pinsData(){ return coll().filter(c => c.source === 'pass').slice(0, 12).map((c, i) => { const r = rng(hash(c.id)); const col = (i + Math.floor(i/3)) % 3, row = Math.floor(i/3);
+  return { c, x: 170 + col*280 + (r() - .5)*90, y: 250 + row*230 + (r() - .5)*70 }; }); }
+function mapHTML(){
+  const sel = UI.selPin && coll().find(c => c.id === UI.selPin);
+  return `<div class="map ${sel ? 'zoomed' : ''}" id="map">
+    <div class="world" id="world"><img src="${mapImage()}" alt="" draggable="false"></div>
+    <div id="pins">${pinsData().map(p => `<button class="pin ${p.c.id === UI.selPin ? 'sel' : ''}" data-pin="${p.c.id}" data-x="${p.x}" data-y="${p.y}" aria-label="${esc(p.c.work.title)}（${esc(p.c.place.name)}）">${frame(p.c.work)}<span class="pdot"></span></button>`).join('')}</div>
+    <div class="hint">作品をタップすると近づきます</div>
+    <div class="mcard">${sel ? infoCard(sel) : ''}</div></div>`;
+}
+function layoutMap(animate){
+  const map = $('#map'); if (!map) return;
+  const vw = map.clientWidth, vh = map.clientHeight, pins = [...map.querySelectorAll('.pin')];
+  if (!animate) map.classList.add('dragging');
+  if (UI.selPin){ const p = pins.find(b => b.dataset.pin === UI.selPin); if (p){ MAPV.s = 1.15; MAPV.x = vw/2 - p.dataset.x * MAPV.s; MAPV.y = vh*.5 - p.dataset.y * MAPV.s; } }
+  $('#world').style.transform = `translate(${MAPV.x}px,${MAPV.y}px) scale(${MAPV.s})`;
+  pins.forEach(b => { b.style.left = (MAPV.x + b.dataset.x * MAPV.s) + 'px'; b.style.top = (MAPV.y + b.dataset.y * MAPV.s) + 'px'; });
+  if (!animate) requestAnimationFrame(() => requestAnimationFrame(() => map.classList.remove('dragging')));
+}
+function fitMap(){
+  const map = $('#map'); if (!map) return; const pts = pinsData(); const vw = map.clientWidth, vh = map.clientHeight;
+  if (!pts.length){ MAPV.s = .5; MAPV.x = 0; MAPV.y = 0; return; }
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y); const bw = Math.max(...xs) - Math.min(...xs) + 160, bh = Math.max(...ys) - Math.min(...ys) + 220;
+  MAPV.s = Math.max(.38, Math.min(.9, Math.min(vw / bw, vh / bh)));
+  MAPV.x = vw/2 - (Math.min(...xs) + Math.max(...xs))/2 * MAPV.s; MAPV.y = vh/2 - ((Math.min(...ys) + Math.max(...ys))/2 - 50) * MAPV.s;
+}
+function bindMap(){
+  const map = $('#map'); if (!map) return;
+  if (!UI.selPin) fitMap(); layoutMap(false);
+  let drag = null;
+  map.addEventListener('pointerdown', e => { if (UI.selPin) return; drag = { x:e.clientX, y:e.clientY, ox:MAPV.x, oy:MAPV.y, moved:false }; });
+  map.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 6){ drag.moved = true; map.classList.add('dragging'); }
+    if (drag.moved){ MAPV.x = drag.ox + dx; MAPV.y = drag.oy + dy; layoutMap(true); } });
+  const end = () => { if (drag?.moved){ map.dataset.justDragged = '1'; setTimeout(() => delete map.dataset.justDragged, 60); } drag = null; map.classList.remove('dragging'); };
+  map.addEventListener('pointerup', end); map.addEventListener('pointercancel', end); map.addEventListener('pointerleave', end);
+}
+function zoomOutMap(){ const map = $('#map'); if (!map) return; UI.selPin = null; map.classList.remove('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.remove('sel')); fitMap(); layoutMap(true); }
+
+/* ---------- carousel ---------- */
+function bindCarousel(){
+  const car = $('#car'); if (!car) return; const items = [...car.children]; const { list, today } = homeItems();
+  const update = () => {
+    const mid = car.scrollLeft + car.clientWidth / 2; let best = 0, bd = 1e9;
+    items.forEach((it, i) => { const c = it.offsetLeft + it.offsetWidth / 2, d = (c - mid) / it.offsetWidth; const ad = Math.min(1, Math.abs(d));
+      it.style.transform = `scale(${1 - ad * .26})`; if (Math.abs(d) < bd){ bd = Math.abs(d); best = i; } });
+    if (best !== UI.carIndex){ UI.carIndex = best; $('#carInfo').innerHTML = infoCard(list[best]); $('#todayLbl').innerHTML = `${today ? '今日の作品' : '最近の作品'} <b>${best + 1} / ${list.length}</b>`; }
+  };
+  const it = items[UI.carIndex]; if (it) car.scrollLeft = it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2;
+  update(); let raf; car.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive:true });
+}
+
+/* ================= GACHA ================= */
+function propSVG(kind){
+  const P = {
+    wpalette:`<g><rect x="-34" y="-24" width="68" height="48" rx="6" fill="#fff" stroke="#cfd6e0" stroke-width="2"/>${['#E84855','#F3A712','#3F88C5','#7FB800','#9D4EDD','#FF9B71'].map((c,i) => `<circle cx="${-22 + (i%3)*22}" cy="${-9 + Math.floor(i/3)*18}" r="7" fill="${c}" opacity=".85"/>`).join('')}</g>`,
+    cups:`<g><path d="M-22-16h16l-2 30h-12z" fill="#F7A23B" opacity=".9"/><path d="M2-16h16l-2 30H4z" fill="#3FA9F5" opacity=".9"/><path d="M-22-16h16M2-16h16" stroke="#fff" stroke-width="3"/></g>`,
+    opalette:`<g><path d="M-36 4c0-20 22-30 42-26 22 4 34 18 28 32-4 9-16 6-20 12-5 8 0 16-14 16-20 0-36-14-36-34z" fill="#C8873F" stroke="#8D5A22" stroke-width="2"/><circle cx="-14" cy="14" r="6" fill="#f3e2c8"/>${['#E84855','#F3A712','#3F88C5','#fff','#2B8A3E'].map((c,i) => `<circle cx="${-18 + i*11}" cy="${-8 + (i%2)*6}" r="5" fill="${c}"/>`).join('')}</g>`,
+    tubes:`<g><rect x="-20" y="-28" width="16" height="44" rx="3" fill="#E9EDF2" stroke="#9aa3ad" stroke-width="1.5"/><rect x="-20" y="-6" width="16" height="12" fill="#3F88C5"/><rect x="2" y="-22" width="16" height="44" rx="3" fill="#E9EDF2" stroke="#9aa3ad" stroke-width="1.5"/><rect x="2" y="0" width="16" height="12" fill="#2B8A3E"/><rect x="-16" y="-34" width="8" height="7" fill="#555"/><rect x="6" y="-28" width="8" height="7" fill="#555"/></g>`,
+    envelope:`<g transform="rotate(-14)"><rect x="-32" y="-20" width="64" height="40" rx="4" fill="#fff" stroke="#d8dde5" stroke-width="2"/><path d="M-32-20 0 4l32-24" fill="none" stroke="#d8dde5" stroke-width="2"/><circle cx="0" cy="2" r="6" fill="#D8343A"/></g>`,
+    kraft:`<g transform="rotate(20)"><rect x="-24" y="-32" width="48" height="64" rx="3" fill="#B98A56" stroke="#8E6638" stroke-width="2"/><rect x="-12" y="-38" width="30" height="40" fill="#fff" transform="rotate(10)"/><circle cx="0" cy="-20" r="4" fill="#8E6638"/></g>`,
+    letter:`<g><rect x="-16" y="-11" width="32" height="22" rx="2" fill="#fff" stroke="#d8dde5" stroke-width="1.5"/><path d="M-16-11 0 2l16-13" fill="none" stroke="#E84855" stroke-width="1.5"/></g>`,
+    pencil:`<g transform="rotate(-35)"><rect x="-6" y="-38" width="12" height="62" fill="#FFC234" stroke="#C9921A" stroke-width="1.5"/><path d="M-6 24 0 38l6-14z" fill="#F3D9B1"/><path d="M-2 33 0 38l2-5z" fill="#333"/><rect x="-6" y="-44" width="12" height="7" fill="#F48FB1"/></g>`,
+    sketchbook:`<g transform="rotate(10)"><rect x="-30" y="-24" width="60" height="48" rx="3" fill="#fff" stroke="#c9ced6" stroke-width="2"/><path d="M-30-24v48" stroke="#333" stroke-width="5" stroke-dasharray="3 4"/><path d="M-16 10c8-18 18-18 30-4" fill="none" stroke="#9B6CF0" stroke-width="3" stroke-linecap="round"/></g>`,
+    tablet:`<g><rect x="-34" y="-24" width="68" height="48" rx="7" fill="#2B2D42"/><rect x="-28" y="-18" width="56" height="36" rx="3" fill="#5BC0BE"/><circle cx="-6" cy="0" r="9" fill="#FFC234"/><path d="M8 18 30-20" stroke="#ddd" stroke-width="4" stroke-linecap="round"/></g>`,
+    pixel:`<g>${[[0,0],[1,0],[2,1],[-1,1],[0,2],[1,2],[-1,-1],[2,-1]].map(([x,y],i) => `<rect x="${x*10-5}" y="${y*10-12}" width="10" height="10" fill="${['#18B0A2','#F4553B','#FFC234','#4A9BF5'][i%4]}"/>`).join('')}</g>`,
+    camera:`<g><rect x="-30" y="-18" width="60" height="38" rx="6" fill="#333"/><rect x="-14" y="-26" width="20" height="10" rx="2" fill="#333"/><circle cx="0" cy="1" r="13" fill="#666" stroke="#ddd" stroke-width="3"/><circle cx="0" cy="1" r="6" fill="#4A9BF5"/></g>`,
+    film:`<g transform="rotate(-12)"><rect x="-30" y="-14" width="60" height="28" fill="#222"/>${[-24,-12,0,12,24].map(x => `<rect x="${x-3}" y="-11" width="6" height="4" fill="#fff"/><rect x="${x-3}" y="7" width="6" height="4" fill="#fff"/>`).join('')}<rect x="-26" y="-5" width="24" height="10" fill="#F06BA8"/><rect x="2" y="-5" width="24" height="10" fill="#FFC234"/></g>`,
+  };
+  return P[kind] || '';
+}
+function viewGacha(){
+  rollDay(); const cat = GACHA_CATS[UI.cat], n = S.coins.n;
+  const land = 'M20,90c18-30 52-34 70-18 10 9 4 24 20 30 22 8 30 34 12 46-20 13-46-6-62-10-22-5-48-14-40-48zM150,60c26-14 64-8 78 12 9 13-6 22-2 36 5 17 26 22 18 40-10 20-44 14-58 0-12-12-6-30-22-40-20-12-34-36-14-48zM290,120c16-12 44-10 54 6 8 13-8 26-24 30-22 5-46-20-30-36zM90,190c24-6 52 6 52 22s-30 26-50 18-24-36-2-40z';
+  return `<div class="app pad-nav" style="position:relative">
+    <header class="chead shadow wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-tab="me" aria-label="マイページ">${I.user}</button></header>
+    <div class="coins" aria-label="作品コイン ${n}枚">${I.coin}<span>${n}</span></div>
+    <div class="wrap">
+      <div class="catrow"><button class="arrow" data-act="catPrev" aria-label="前のジャンル">${I.left}</button>
+        <button class="cat" style="background:${cat.color}" data-act="catNext" aria-label="ジャンル：${cat.label}（タップで切り替え）">${cat.label}</button>
+        <button class="arrow" data-act="catNext" aria-label="次のジャンル">${I.right}</button></div>
+      <div class="stage" id="stage">
+        <span class="shadow"></span>
+        <svg class="globe" viewBox="0 0 300 300" aria-hidden="true">
+          <g id="propsBack"></g>
+          <path id="orbitBack" d="" fill="none" stroke="#FFE45C" stroke-width="3.5" opacity=".9"/>
+          <circle cx="150" cy="150" r="100" fill="url(#ocean)"/>
+          <g clip-path="url(#globeClip)"><g id="land" fill="#2FB45A" opacity=".9"><path d="${land}" transform="translate(40 40)"/><path d="${land}" transform="translate(-320 40)"/></g>
+            <g id="meridians" fill="none" stroke="#fff" stroke-width="3" opacity=".75"></g>
+            <g fill="none" stroke="#fff" stroke-width="3" opacity=".75"><ellipse cx="150" cy="150" rx="100" ry="4"/><ellipse cx="150" cy="105" rx="90" ry="10"/><ellipse cx="150" cy="195" rx="90" ry="10"/><ellipse cx="150" cy="70" rx="62" ry="8"/><ellipse cx="150" cy="230" rx="62" ry="8"/></g></g>
+          <circle cx="150" cy="150" r="100" fill="url(#rim)"/><circle cx="150" cy="150" r="100" fill="url(#gloss)"/>
+          <path id="orbitFront" d="" fill="none" stroke="#FFE45C" stroke-width="3.5"/>
+          <g id="propsFront"></g>
+        </svg>
+      </div>
+      <div class="gbox">
+        <button class="gbtn" data-act="draw" ${n <= 0 ? 'disabled' : ''}>ガチャを回す</button>
+        <div class="gline">作品コイン ${I.coin} を一枚消費して</div>
+        <span class="minicat" style="background:${cat.color}">${cat.label}</span>
+        <div class="gsub">ガチャを回す</div>
+      </div>
+      <p class="gnote">${n > 0 ? '作品コインは毎日5枚配られます（0:00にリセット）。ガチャで届いた作品には場所が残りません。' : '今日のコインを使い切りました。明日 0:00 に5枚配られます。'}</p>
+    </div></div>`;
+}
+let globeRAF = 0;
+function runGlobe(){
+  cancelAnimationFrame(globeRAF);
+  const land = $('#land'), mer = $('#meridians'); if (!land) return;
+  const cat = GACHA_CATS[UI.cat]; const props = cat.props.map((k, i) => ({ k, phase: i / cat.props.length * Math.PI * 2 + .6 }));
+  const cx = 150, cy = 150, rx = 140, ry = 46, tilt = -18 * Math.PI / 180;
+  const pt = a => { const x = rx * Math.cos(a), y = ry * Math.sin(a); return [cx + x*Math.cos(tilt) - y*Math.sin(tilt), cy + x*Math.sin(tilt) + y*Math.cos(tilt)]; };
+  const arc = (a0, a1) => { let d = ''; for (let i = 0; i <= 40; i++){ const [x,y] = pt(a0 + (a1 - a0) * i / 40); d += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); } return d; };
+  $('#orbitBack').setAttribute('d', arc(Math.PI, 2*Math.PI)); $('#orbitFront').setAttribute('d', arc(0, Math.PI));
+  let off = 0, ang = 0, last = performance.now();
+  const step = now => {
+    const dt = Math.min(50, now - last); last = now; const fast = $('#stage')?.classList.contains('spin') ? 9 : 1;
+    off = (off + dt * .018 * fast) % 360; ang += dt * .00045 * fast;
+    land.setAttribute('transform', `translate(${off.toFixed(2)} 0)`);
+    let m = ''; for (let i = 0; i < 6; i++){ const ph = ((off / 360) * Math.PI * 2 + i * Math.PI / 6) % Math.PI; m += `<ellipse cx="150" cy="150" rx="${(Math.abs(Math.cos(ph)) * 100).toFixed(1)}" ry="100"/>`; }
+    mer.innerHTML = m;
+    let back = '', front = '';
+    props.forEach(p => { const a = ang + p.phase; const [x, y] = pt(a); const depth = Math.sin(a); const s = .78 + depth * .22;
+      const g = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${s.toFixed(3)})" opacity="${(.75 + depth*.25).toFixed(2)}">${propSVG(p.k)}</g>`; if (depth < 0) back += g; else front += g; });
+    $('#propsBack').innerHTML = back; $('#propsFront').innerHTML = front;
+    if (!reduced || fast > 1) globeRAF = requestAnimationFrame(step);
+  };
+  globeRAF = requestAnimationFrame(step);
+  const st = $('#stage'); let sx = null;
+  st.addEventListener('pointerdown', e => sx = e.clientX);
+  st.addEventListener('pointerup', e => { if (sx !== null && Math.abs(e.clientX - sx) > 40) setCat(UI.cat + (e.clientX < sx ? 1 : -1)); sx = null; });
+}
+function setCat(i){ UI.cat = (i + GACHA_CATS.length) % GACHA_CATS.length; render(); }
+function draw(){
+  rollDay(); if (S.coins.n <= 0) return;
+  const cat = GACHA_CATS[UI.cat];
+  let w, tries = 0; do { w = makeWork(Math.random, null, cat.tags); tries++; } while (isBlocked(w.artist.handle) && tries < 20);
+  w.at = Date.now();
+  const c = { id: uid(), source:'gacha', place:null, at: Date.now(), work: w };
+  S.coins.n--; S.collection.push(c); if (S.settings.notifyGacha) notify(`ガチャで「${w.title}」（${w.artist.name}）が届きました`, c); save();
+  const btn = $('[data-act=draw]'); if (btn) btn.disabled = true;
+  $('#stage')?.classList.add('spin');
+  setTimeout(() => {
+    $('#fx').innerHTML = `<div class="draw" role="dialog" aria-modal="true" aria-label="ガチャの結果">
+      <div class="rays"></div>
+      <div class="col">
+        <div class="env"><div class="back2"></div><div class="card">${frame(w)}</div><div class="body"></div><div class="flap"></div><div class="seal"></div></div>
+        <div class="txt"><small>NEW ARTWORK</small><b>${esc(w.title)}</b><span>${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(cat.label)}</span></div>
+        <div class="btns"><button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxMuseum" data-cid="${c.id}">美術館を見る</button></div>
+      </div></div>`;
+    $('#stage')?.classList.remove('spin');
+  }, reduced ? 0 : 1100);
+}
+
+/* ================= MY PAGE ================= */
+function collage(works){
+  const w3 = works.slice(0, 3); if (!w3.length) return '<div class="empty" style="padding:30px">まだ作品がありません</div>';
+  const pos = [{l:'4%', w:'31%', z:1}, {l:'33%', w:'36%', z:3}, {l:'64%', w:'31%', z:2}];
+  const order = w3.length === 1 ? [1] : w3.length === 2 ? [0,1] : [0,1,2];
+  return `<div class="collage">${w3.map((w, i) => { const p = pos[order[i]]; return `<div class="c" style="left:${p.l};width:${p.w};z-index:${p.z}">${frame(w)}</div>`; }).join('')}</div>`;
+}
+function viewMe(){
+  const all = coll(); const f = UI.pfilter; const filtered = f === 'all' ? all : all.filter(c => c.work.tags.includes(f));
+  const usedTags = [...new Set(all.flatMap(c => c.work.tags))];
+  let body;
+  if (UI.ptab === 'mine'){
+    body = `<button class="album" data-act="openMine"><div class="ah"><span>${I.heart}マイ美術館</span><span>${I.pics}${S.myWorks.length}</span></div>${collage(S.myWorks)}</button>`;
+  } else {
+    const pass = filtered.filter(c => c.source === 'pass'), gacha = filtered.filter(c => c.source === 'gacha');
+    const groups = {}; pass.forEach(c => { (groups[c.place.name] ||= { place:c.place, n:0 }).n++; });
+    body = `<div class="filt" role="group" aria-label="タグで絞り込み"><button aria-pressed="${f === 'all'}" data-pf="all">All</button>${usedTags.map(t => `<button aria-pressed="${f === t}" data-pf="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+      ${pass.length ? `<button class="album" data-act="openColl" data-src="pass"><div class="ah"><span>${I.pin}すれ違いで出会った作品</span><span>${I.pics}${pass.length}</span></div>${collage(pass.map(c => c.work))}</button>` : ''}
+      ${gacha.length ? `<button class="album" data-act="openColl" data-src="gacha"><div class="ah"><span>${I.gacha}ガチャで届いた作品</span><span>${I.pics}${gacha.length}</span></div>${collage(gacha.map(c => c.work))}</button>` : ''}
+      ${!pass.length && !gacha.length ? '<div class="empty">この条件の作品はまだありません。</div>' : ''}
+      ${Object.keys(groups).length && S.settings.location !== 'off' ? `<div class="places"><h3>出会った場所</h3>${Object.values(groups).sort((a,b) => b.n - a.n).map(g => `<button class="prow" data-act="openPlace" data-place="${esc(g.place.name)}">${I.pin}<div><b>${esc(g.place.name)}</b><span>${esc(g.place.city)}${S.settings.location === 'precise' ? `・${g.place.lat.toFixed(4)}, ${g.place.lng.toFixed(4)}` : ''}</span></div><em>${g.n}</em></button>`).join('')}</div>` : ''}`;
+  }
+  const unread = S.notifications.some(n => !n.read);
+  return `<div class="app pad-nav">
+    <header class="chead wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-act="notifs" aria-label="お知らせ">${I.bell}${unread ? '<span class="dot"></span>' : ''}</button></header>
+    <div class="wrap">
+      <div class="prof"><img class="av" src="${meAv()}" alt=""><div class="nm"><b>${esc(S.me.name)}${I.shield}</b><span>@${esc(S.me.handle)}${S.me.private ? '・非公開' : ''}</span></div><button class="editbtn" data-act="editProfile">${I.pen}編集</button></div>
+      <div class="ptabs" role="tablist"><button role="tab" aria-selected="${UI.ptab === 'mine'}" data-ptab="mine">マイ美術館</button><button role="tab" aria-selected="${UI.ptab === 'others'}" data-ptab="others">他人の作品</button></div>
+      ${body}
+    </div></div>
+    ${UI.ptab === 'mine' ? `<button class="fab" data-act="newWork" aria-label="作品を追加">${I.plus}</button>` : ''}`;
+}
+
+/* ================= SETTINGS ================= */
+const LOC_LABEL = { off:'記録しない', city:'エリアまで', precise:'詳細な場所' };
+const SETTINGS = [
+  { group:'あなたのアカウント', items:[ ['editProfile','user','プロフィールを編集','名前、ユーザーネーム、自己紹介'], ['go:account','key','アカウントセンター','パスワード、セキュリティ、個人の情報'] ] },
+  { group:'ARTOROの使い方', items:[ ['go:pass','pass','すれ違い通信'], ['go:location','pin','位置情報の記録'], ['go:notify','bell','お知らせ'] ] },
+  { group:'作品を見られる人', items:[ ['go:privacy','lock','アカウントのプライバシー'], ['go:blocked','block','ブロック済み'] ] },
+  { group:'その他の情報とサポート', items:[ ['go:data','data','データとストレージ'], ['go:help','help','ヘルプ'], ['go:about','info','ARTOROについて'] ] },
+];
+const sval = k => ({ 'go:pass': S.settings.passMode ? 'オン' : 'オフ', 'go:location': LOC_LABEL[S.settings.location], 'go:privacy': S.me.private ? '非公開' : '公開', 'go:blocked': S.blocked.length ? S.blocked.length + '人' : '' }[k] || '');
+const srow = (act, ic, label, sub = '', val = '') => `<button class="srow" data-act="${act}">${I[ic]}<span class="lbl">${label}${sub ? `<small>${sub}</small>` : ''}</span>${val ? `<span class="val">${val}</span>` : ''}${I.chev.replace('<svg', '<svg class="chev"')}</button>`;
+const trow = (on, act, label, sub = '') => `<div class="srow"><span class="lbl">${label}${sub ? `<small>${sub}</small>` : ''}</span><button class="sw" role="switch" aria-checked="${!!on}" aria-label="${esc(label)}" data-act="${act}"></button></div>`;
+function viewSettings(){
+  const q = UI.sq.trim();
+  const groups = SETTINGS.map(g => ({ ...g, items: g.items.filter(it => !q || it[2].includes(q) || (it[3] || '').includes(q)) })).filter(g => g.items.length);
+  return `<div class="app pad-nav"><header class="chead wrap"><span></span><div class="t">設定とアクティビティ</div><span></span></header><div class="wrap">
+    <label class="search">${I.search}<span class="sr">設定を検索</span><input id="sq" placeholder="検索" value="${esc(UI.sq)}" autocomplete="off"></label>
+    ${groups.map(g => `<div class="sgroup"><h3>${g.group}</h3>${g.items.map(it => srow(it[0], it[1], it[2], it[3] || '', sval(it[0]))).join('')}</div>`).join('') || '<div class="empty">一致する設定はありません。</div>'}
+    ${q ? '' : `<div class="sep"></div><div class="sgroup"><h3>ログイン</h3><button class="srow" data-act="noop:add"><span class="lbl" style="color:var(--blue);font-weight:700">アカウントを追加</span></button>
+    <button class="srow red" data-act="noop:logout">${I.logout}<span class="lbl">ログアウト</span></button></div>`}</div></div>`;
+}
+
+/* ================= pushed pages ================= */
+const shell = (title, body, right = '<span></span>') => `<div class="page"><div class="app pad-nav"><header class="chead wrap"><button class="back" data-act="back">${I.back}戻る</button><div class="t">${esc(title)}</div>${right}</header><div class="wrap">${body}</div></div></div>`;
+
+function pageMuseum(P){
+  let works, title, ownerHTML = '';
+  if (P.kind === 'artist'){ const a = P.artist; const owned = coll().filter(c => c.work.artist.handle === a.handle);
+    works = museumOf(a).map(w => ({ w, c: owned.find(o => o.work.id === w.id) }));
+    owned.filter(o => !works.some(x => x.c === o)).forEach(o => works.unshift({ w:o.work, c:o }));
+    title = `${a.name}の美術館`;
+    ownerHTML = `<div class="wall-owner"><img src="${artistAv(a)}" alt=""><div><b>${esc(a.name)}</b><span>@${esc(a.handle)}・${works.length}作品</span></div>
+      <button class="editbtn" style="margin-left:auto" data-act="follow" data-h="${esc(a.handle)}">${S.following.includes(a.handle) ? 'フォロー中' : 'フォロー'}</button></div>`;
+  } else if (P.kind === 'mine'){ works = S.myWorks.map(w => ({ w, mine:true })); title = 'マイ美術館'; }
+  else if (P.kind === 'place'){ works = coll().filter(c => c.source === 'pass' && c.place.name === P.place).map(c => ({ w:c.work, c })); title = P.place; }
+  else { works = coll().filter(c => c.source === P.src && (UI.pfilter === 'all' || c.work.tags.includes(UI.pfilter))).map(c => ({ w:c.work, c })); title = '他人の作品'; }
+  P._works = works;
+  const grid = P.view === 'grid';
+  const right = `<button class="iconbtn r" data-act="wallView" aria-label="${grid ? '壁に並べて表示' : '一覧で表示'}">${grid ? I.wall : I.grid}</button>`;
+  if (!works.length) return shell(title, `${ownerHTML}<div class="empty">まだ作品がありません。${P.kind === 'mine' ? '<button class="pbtn red" data-act="newWork">作品を追加</button>' : ''}</div>`, right);
+  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}">${frame(x.w, { ribbon: x.mine && x.w.id === S.thumbId })}</button>`;
+  let body;
+  if (grid) body = `<div class="mgrid">${works.map((x, i) => item(x, i, 'position:static')).join('')}</div>`;
+  else {
+    const H = Math.min(Math.min(window.innerWidth, 480) * 1.15, 500), rowH = H * .4; let xt = 22, xb = 22 + H * .2;
+    const pos = works.map((o, i) => { const ar = o.w.aspect[0] / o.w.aspect[1]; const w = Math.min(rowH * ar, H * .62); const row = i % 2;
+      const p = { left: row ? xb : xt, top: row ? H * .55 : H * .02 + (i % 4 === 2 ? H * .03 : 0), w }; if (row) xb += w + 30; else xt += w + 30; return p; });
+    const total = Math.max(xt, xb) + 10;
+    body = `<div class="wall" id="wall" style="height:${H}px"><div class="inner" style="width:${total}px">${works.map((o, i) => item(o, i, `left:${pos[i].left}px;top:${pos[i].top}px;width:${pos[i].w}px`)).join('')}</div></div><div class="prog"><i id="progBar"></i></div>`;
+  }
+  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">黄色いリボンは「すれ違い通信のサムネ」に設定中の作品です。作品をタップすると編集できます。</p>' : '<p class="help">作品をタップすると詳しく見られます。</p>'}`, right);
+}
+function pageDetail(P){
+  const { w, c } = P; const loc = S.settings.location;
+  const place = c ? (c.source === 'pass'
+      ? `<div class="place pass">${I.pin}<b>${loc === 'off' ? 'すれ違いで受け取り' : esc(c.place.name)}</b><span>${loc === 'off' ? `場所は記録しない設定です・${jdate(c.at)}` : `${esc(c.place.city)}${loc === 'precise' ? `・${c.place.lat.toFixed(4)}, ${c.place.lng.toFixed(4)}` : ''}・${jdate(c.at)}にすれ違い`}</span></div>`
+      : `<div class="place gacha">${I.gacha}<b>ガチャで受け取り</b><span>場所の記録なし・${jdate(c.at)}</span></div>`)
+    : `<div class="place">${I.museum}<b>まだ受け取っていない作品</b><span>${esc(w.artist.name)}さんとすれ違ったとき、この作品がサムネなら届きます</span></div>`;
+  return shell(w.artist.name, `<div class="drow">
+      <div class="dimg"><img src="${src(w)}" alt="${esc(w.title)}"></div>
+      ${infoCard(c || w, { full:true })}
+      ${place}
+      ${P.from !== 'artist' ? `<button class="byline" data-act="toArtist"><img src="${artistAv(w.artist)}" alt=""><div><b>${esc(w.artist.name)}</b><br><span>@${esc(w.artist.handle)}の美術館を見る</span></div>${I.chev}</button>` : ''}
+    </div>
+    <div class="pillbtns"><button class="pbtn" data-act="back">戻る</button>${c ? `<button class="pbtn red" data-act="askDelete">削除する</button>` : ''}</div>`);
+}
+function pageForm(P){
+  const d = P.draft;
+  const sugg = TAGS.filter(t => !d.tags.includes(t) && (!d.q || t.includes(d.q))).slice(0, 8);
+  const qq = (d.q || '').replace(/^#/, '').trim(); const custom = qq && !TAGS.includes(qq) && !d.tags.includes(qq) ? qq : '';
+  return shell('マイ美術館', `<form id="workForm" class="drow" novalidate>
+      <label class="formimg" id="drop" for="file">${d.img || d.seed != null ? `<img src="${d.img || art(d.seed, d.style, d.aspect)}" alt="選んだ画像">` : `${I.image.replace('<svg', '<svg class="ic"')}<span>タップして画像を選ぶ<br>（ドロップもできます）</span>`}</label>
+      <input type="file" id="file" accept="image/*" class="sr">
+      <div class="fld"><label for="ftitle">${I.pen}タイトル</label><input id="ftitle" maxlength="30" value="${esc(d.title)}" autocomplete="off"><span class="cnt" id="tcnt">${d.title.length}/30</span></div>
+      <div class="fld"><label for="fcap">${I.pen}キャプション</label><textarea id="fcap" maxlength="500">${esc(d.desc)}</textarea><span class="cnt b" id="ccnt">${d.desc.length}/500</span></div>
+      <div class="fld"><label for="ftag" class="tagsearch">${I.search}<input id="ftag" placeholder="タグを検索する" value="${esc(d.q || '')}" autocomplete="off"></label>
+        ${d.tags.length ? `<div class="chosen">${d.tags.map(t => `<button type="button" data-rmtag="${esc(t)}" aria-label="${esc(t)}を外す">#${esc(t)}${I.x}</button>`).join('')}</div>` : ''}
+        <div class="sugg">${custom ? `<button type="button" data-addtag="${esc(custom)}">＋ #${esc(custom)} を追加</button>` : ''}${sugg.map(t => `<button type="button" data-addtag="${esc(t)}">#${esc(t)}</button>`).join('')}</div></div>
+      <div class="trow"><span>すれ違い通信のサムネにする</span><button type="button" class="sw" role="switch" aria-checked="${d.thumb}" aria-label="すれ違い通信のサムネにする" data-act="fThumb"></button></div>
+      <p class="err" id="ferr" hidden></p>
+      <div class="done"><button class="pbtn" type="submit">完了</button></div>
+      ${P.id ? `<div style="text-align:center"><button type="button" class="linkbtn" data-act="askDelete" style="color:var(--coral)">この作品を削除</button></div>` : ''}
+    </form>`);
+}
+function pageSettings(P){
+  const s = S.settings, p = P.page;
+  if (p === 'account') return shell('アカウントセンター', `<div class="sgroup">${srow('editProfile','user','プロフィールを編集','名前、ユーザーネーム、自己紹介')}${srow('noop:pw','key','パスワードとセキュリティ')}${srow('noop:info','info','個人の情報','生年月日、メールアドレス')}</div><p class="help">デモ版のため、パスワードと個人の情報の画面は準備中です。</p>`);
+  if (p === 'pass'){ const tw = thumbWork();
+    return shell('すれ違い通信', `${trow(s.passMode,'tPass','すれ違い通信','オンの間、近くのARTOROユーザーと作品を交換します')}
+      <div class="sgroup"><h3>相手に届ける作品（サムネ）</h3>${tw ? `<button class="srow" data-act="openMine"><img src="${src(tw)}" alt="" style="width:40px;height:50px;object-fit:cover;border-radius:4px"><span class="lbl">${esc(tw.title)}<small>マイ美術館で変更できます</small></span>${I.chev.replace('<svg','<svg class="chev"')}</button>` : '<p class="help">マイ美術館で作品を「すれ違い通信のサムネ」に設定してください。</p>'}</div>
+      <div class="sgroup"><h3>1日に受け取る上限</h3>${[10,20,50].map(n => `<button class="radio" role="radio" aria-checked="${s.dailyLimit === n}" data-limit="${n}"><span class="lbl">${n}人まで</span><span class="o"></span></button>`).join('')}</div>
+      <div class="sgroup"><h3>受け取るタグ</h3><p class="help" style="margin-top:0">選んだタグの作品だけを受け取ります。何も選ばなければすべて受け取ります。</p><div class="chips">${TAGS.map(t => `<button aria-pressed="${s.receiveTags.includes(t)}" data-rtag="${esc(t)}">#${esc(t)}</button>`).join('')}</div></div>
+      <p class="help">Web版ではBluetoothのすれ違いが使えないため、ホームの「すれ違いを試す」で動きを確認できます。</p>`); }
+  if (p === 'location') return shell('位置情報の記録', `<div class="sgroup"><h3>すれ違った場所をどこまで記録するか</h3>${[['precise','詳細な場所','施設名と座標を記録します'],['city','エリアまで','施設名と市区町村を記録します'],['off','記録しない','場所を残さず、作品だけを受け取ります']].map(([k,l,sub]) => `<button class="radio" role="radio" aria-checked="${s.location === k}" data-loc="${k}"><span class="lbl">${l}<small>${sub}</small></span><span class="o"></span></button>`).join('')}</div><p class="help">相手にあなたの位置情報は届きません。記録はあなたのコレクションの中だけに残ります。</p>`);
+  if (p === 'notify') return shell('お知らせ', `${trow(s.notifyPass,'tNotifyPass','すれ違い','誰かとすれ違って作品が届いたとき')}${trow(s.notifyGacha,'tNotifyGacha','ガチャ','ガチャで作品が届いたとき')}`);
+  if (p === 'privacy') return shell('アカウントのプライバシー', trow(S.me.private,'tPrivate','非公開アカウント','オンにすると、あなたの美術館はフォローを承認した人だけが見られます。すれ違いで届くサムネはこれまでどおり届きます。'));
+  if (p === 'blocked') return shell('ブロック済み', S.blocked.length ? S.blocked.map(b => `<div class="srow"><img src="${artistAv(b)}" alt="" style="width:36px;height:36px;border-radius:50%"><span class="lbl">${esc(b.name)}<small>@${esc(b.handle)}</small></span><button class="editbtn" data-unblock="${esc(b.handle)}">ブロックを解除</button></div>`).join('') : '<div class="empty">ブロックしている人はいません。作品の「削除する」からブロックできます。</div>');
+  if (p === 'data'){ const bytes = (() => { try { return (localStorage.getItem(KEY) || '').length; } catch(e){ return 0; } })();
+    return shell('データとストレージ', `<dl class="kv"><dt>受け取った作品</dt><dd>${S.collection.length}点</dd><dt>マイ美術館</dt><dd>${S.myWorks.length}点</dd><dt>保存サイズ</dt><dd>${(bytes/1024).toFixed(1)} KB</dd></dl>
+      <div class="pillbtns" style="padding-top:6px"><button class="pbtn red" data-act="askReset">データを初期化</button></div><p class="help" style="text-align:center">デモ版のデータは、このブラウザの中だけに保存されています。</p>`); }
+  if (p === 'help') return shell('ヘルプ', `<div class="sgroup"><h3>すれ違い通信とは？</h3><p style="margin:0">ARTOROを開いた人どうしが近くを通ると、おたがいが「サムネ」に設定した作品が自動で届きます。フォロワー数やおすすめ表示に左右されずに、出会った人へ作品が届きます。</p></div>
+      <div class="sgroup"><h3>ホームの地図</h3><p style="margin:0">右上のスイッチで、作品を出会った場所の地図に切り替えられます。作品をタップすると近づき、もう一度タップすると相手の美術館へ移ります。</p></div>
+      <div class="sgroup"><h3>ガチャと作品コイン</h3><p style="margin:0">近くにユーザーがいなくても作品と出会えるように、毎日5枚の作品コインが配られます。1枚で1回ガチャを回せます。ジャンルは地球儀を左右にスワイプして選べます。</p></div>`);
+  if (p === 'about') return shell('ARTOROについて', `<div class="brand-big">ARTORO</div><p style="text-align:center;color:var(--muted);margin:2px 0 18px">アートロ｜すれ違いで作品を交換するアプリ</p>
+      <p>SNSでは、アルゴリズムのせいで作品が多くの人に届きにくいことがあります。ARTOROは、アルゴリズムにたよらず、すれ違った人どうしで作品を送り、受け取れる場所をつくるために生まれました。</p><dl class="kv"><dt>バージョン</dt><dd>0.2.0（Web デモ）</dd></dl>`);
+  if (p === 'notifs'){ const n = S.notifications.slice().reverse();
+    return shell('お知らせ', n.length ? n.map(x => { const c = S.collection.find(y => y.id === x.cid); return `<button class="nrow" ${c ? `data-act="openC" data-cid="${c.id}"` : ''}>${c ? `<img src="${src(c.work)}" alt="">` : ''}<div>${esc(x.text)}<span>${ago(x.at)}</span></div></button>`; }).join('') : '<div class="empty">新しいお知らせはありません。</div>'); }
+  if (p === 'edit'){ const m = P.form;
+    return shell('プロフィールを編集', `<div style="display:grid;justify-items:center;gap:8px;padding:8px 0 16px"><img src="${art(m.avatarSeed, 0, [1,1], 140)}" alt="" style="width:84px;height:84px;border-radius:50%"><button class="linkbtn" data-act="shuffleAv">アイコンを変える</button></div>
+      <form id="profForm" style="display:grid;gap:14px" novalidate>
+        <div><label class="flabel" for="pname">名前</label><input class="inp" id="pname" maxlength="20" value="${esc(m.name)}"></div>
+        <div><label class="flabel" for="phandle">ユーザーネーム（半角英数字・ピリオド・アンダーバー）</label><input class="inp" id="phandle" maxlength="24" value="${esc(m.handle)}" autocapitalize="off"></div>
+        <div><label class="flabel" for="pbio">自己紹介</label><textarea class="inp" id="pbio" maxlength="150" rows="3">${esc(m.bio)}</textarea></div>
+        <p class="err" id="perr" hidden></p><div class="done" style="padding-top:4px"><button class="pbtn red" type="submit">保存する</button></div></form>`); }
+  return '';
+}
+
+/* ================= render ================= */
+const topPage = () => UI.pages[UI.pages.length - 1];
+function render(){
+  rollDay();
+  $('#root').innerHTML = { home:viewHome, gacha:viewGacha, me:viewMe, settings:viewSettings }[UI.tab]();
+  $('#nav').innerHTML = navHTML();
+  if (UI.tab === 'home'){ UI.homeMode === 'map' ? bindMap() : bindCarousel(); }
+  if (UI.tab === 'gacha') runGlobe(); else cancelAnimationFrame(globeRAF);
+  renderPage();
+}
+function renderPage(keep){
+  const P = topPage(); const host = $('#pages');
+  if (!P){ host.innerHTML = ''; document.body.style.overflow = ''; return; }
+  document.body.style.overflow = 'hidden';
+  const prev = host.querySelector('.page')?.scrollTop, prevWall = $('#wall')?.scrollLeft;
+  host.innerHTML = P.type === 'museum' ? pageMuseum(P) : P.type === 'detail' ? pageDetail(P) : P.type === 'form' ? pageForm(P) : pageSettings(P);
+  const pg = host.querySelector('.page');
+  if (keep){ pg.style.animation = 'none'; if (prev) pg.scrollTop = prev; }
+  const wall = $('#wall');
+  if (wall){ if (keep && prevWall) wall.scrollLeft = prevWall; const bar = $('#progBar');
+    const upd = () => { const max = wall.scrollWidth - wall.clientWidth; const vis = Math.max(12, wall.clientWidth / wall.scrollWidth * 100); bar.style.width = vis + '%'; bar.style.left = (max > 0 ? wall.scrollLeft / max : 0) * (100 - vis) + '%'; };
+    wall.addEventListener('scroll', upd, { passive:true }); upd(); }
+}
+const push = P => { UI.pages.push(P); renderPage(); };
+const pop = () => { UI.pages.pop(); if (UI.pages.length) renderPage(); else render(); };
+function modal(html){ $('#fx').innerHTML = `<div class="modal" data-act="modalBg">${html}</div>`; }
+function closeFx(){ $('#fx').innerHTML = ''; }
+function notify(text, c){ S.notifications.push({ text, at: Date.now(), read:false, cid: c?.id }); if (S.notifications.length > 40) S.notifications.shift(); }
+
+/* ================= actions ================= */
+function simulatePass(){
+  const s = S.settings; rollDay();
+  if (S.passLog.count >= s.dailyLimit){ toast(`今日は上限の${s.dailyLimit}人に達しました。上限は設定で変えられます。`); return; }
+  const n = Math.min(1 + Math.floor(Math.random()*2), s.dailyLimit - S.passLog.count), place = pick(PLACES); let added = 0, last;
+  for (let i = 0; i < n; i++){
+    let a, tries = 0; do { a = pick(ARTISTS); tries++; } while (isBlocked(a.handle) && tries < 30); if (isBlocked(a.handle)) continue;
+    let w = museumOf(a)[0];
+    if (s.receiveTags.length && !w.tags.some(t => s.receiveTags.includes(t))) w = { ...makeWork(Math.random, a, s.receiveTags), id: a.handle + ':t' + uid() };
+    else if (S.collection.some(c => c.work.id === w.id)) w = { ...makeWork(Math.random, a), id: a.handle + ':' + uid() };
+    last = { id: uid(), source:'pass', place, at: Date.now() - i*1000, work: w }; S.collection.push(last); added++;
+  }
+  if (!added){ toast('近くにいたのはブロック中の人だけでした'); return; }
+  S.passLog.count += added; if (s.notifyPass) notify(`${place.name}で${added}人とすれ違い、作品が${added}点届きました`, last);
+  UI.carIndex = 0; save(); render(); toast(`${s.location === 'off' ? '' : place.name + 'で'}${added}人とすれ違いました`);
+}
+function switchMode(){
+  const wo = $('#whiteout'); const go = () => { UI.homeMode = UI.homeMode === 'pass' ? 'map' : 'pass'; UI.selPin = null; render(); };
+  if (reduced){ go(); return; }
+  wo.classList.add('on'); setTimeout(() => { go(); setTimeout(() => wo.classList.remove('on'), 60); }, 300);
+}
+async function readImage(file){
+  if (!file || !file.type.startsWith('image/')) throw new Error('画像ファイル（JPG・PNGなど）を選んでください。');
+  const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(new Error('画像を読み込めませんでした。別の画像で試してください。')); fr.readAsDataURL(file); });
+  const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('この画像は開けませんでした。JPGかPNGで試してください。')); im.src = url; });
+  const k = Math.min(1, 1100 / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return { img: c.toDataURL('image/jpeg', .82), aspect: [c.width, c.height] };
+}
+function syncForm(){ const P = topPage(); if (P?.type !== 'form') return; const t = $('#ftitle'), d = $('#fcap'), q = $('#ftag'); if (t) P.draft.title = t.value; if (d) P.draft.desc = d.value; if (q) P.draft.q = q.value; }
+async function takeFile(file){ const P = topPage(); try { syncForm(); const r = await readImage(file); P.draft.img = r.img; P.draft.aspect = r.aspect; P.draft.seed = null; renderPage(true); } catch(e){ const er = $('#ferr'); er.textContent = e.message; er.hidden = false; } }
+function openWorkForm(w){
+  push({ type:'form', id: w?.id || null, draft: w ? { img: w.img || null, seed: w.img ? null : w.seed, style: w.style, aspect: w.aspect, title: w.title, desc: w.desc || '', tags: w.tags.slice(), q:'', thumb: S.thumbId === w.id }
+    : { img:null, seed:null, aspect:[4,5], title:'', desc:'', tags:[], q:'', thumb: !S.myWorks.length } });
+}
+const openArtist = a => push({ type:'museum', kind:'artist', artist: a, view:'wall' });
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button, [data-act]'); if (!b) return; const d = b.dataset; const P = topPage();
+  if (d.tab){ UI.pages = []; closeFx(); UI.tab = d.tab; render(); window.scrollTo(0,0); return; }
+  if (d.ci !== undefined){ const i = +d.ci, car = $('#car'); const { list } = homeItems();
+    if (i !== UI.carIndex){ const it = car.children[i]; car.scrollTo({ left: it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2, behavior: reduced ? 'auto' : 'smooth' }); }
+    else openArtist(list[i].work.artist); return; }
+  if (d.pin){ const map = $('#map'); if (map?.dataset.justDragged) return; const c = coll().find(x => x.id === d.pin);
+    if (UI.selPin === d.pin) openArtist(c.work.artist);
+    else { UI.selPin = d.pin; map.classList.add('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.toggle('sel', p.dataset.pin === d.pin)); map.querySelector('.mcard').innerHTML = infoCard(c); layoutMap(true); }
+    return; }
+  if (d.wi !== undefined){ const x = P._works[+d.wi]; if (x.mine) openWorkForm(x.w); else push({ type:'detail', w: x.w, c: x.c || null, from: P.kind === 'artist' ? 'artist' : 'coll' }); return; }
+  if (d.ptab){ UI.ptab = d.ptab; render(); return; }
+  if (d.pf){ UI.pfilter = d.pf; render(); return; }
+  if (d.limit){ S.settings.dailyLimit = +d.limit; save(); renderPage(true); return; }
+  if (d.loc){ S.settings.location = d.loc; save(); renderPage(true); return; }
+  if (d.rtag){ const a = S.settings.receiveTags, i = a.indexOf(d.rtag); i >= 0 ? a.splice(i,1) : a.push(d.rtag); save(); renderPage(true); return; }
+  if (d.unblock){ S.blocked = S.blocked.filter(x => x.handle !== d.unblock); save(); renderPage(true); toast('ブロックを解除しました'); return; }
+  if (d.addtag){ syncForm(); const t = d.addtag.replace(/^#/, '').trim(); if (P.draft.tags.length >= 5) toast('タグは5つまでです'); else if (t && !P.draft.tags.includes(t)) P.draft.tags.push(t); P.draft.q = ''; renderPage(true); return; }
+  if (d.rmtag){ syncForm(); P.draft.tags = P.draft.tags.filter(t => t !== d.rmtag); renderPage(true); return; }
+  switch (d.act){
+    case 'back': pop(); break;
+    case 'mode': switchMode(); break;
+    case 'simulate': simulatePass(); break;
+    case 'notifs': S.notifications.forEach(n => n.read = true); save(); push({ type:'settings', page:'notifs' }); break;
+    case 'catPrev': setCat(UI.cat - 1); break;
+    case 'catNext': setCat(UI.cat + 1); break;
+    case 'draw': draw(); break;
+    case 'fxClose': closeFx(); render(); break;
+    case 'fxMuseum': { const c = S.collection.find(x => x.id === d.cid); closeFx(); render(); openArtist(c.work.artist); break; }
+    case 'openMine': push({ type:'museum', kind:'mine', view:'wall' }); break;
+    case 'openColl': push({ type:'museum', kind:'coll', src: d.src, view:'wall' }); break;
+    case 'openPlace': push({ type:'museum', kind:'place', place: d.place, view:'wall' }); break;
+    case 'openC': { const c = S.collection.find(x => x.id === d.cid); if (c) push({ type:'detail', w: c.work, c, from:'coll' }); break; }
+    case 'wallView': P.view = P.view === 'grid' ? 'wall' : 'grid'; renderPage(true); break;
+    case 'toArtist': openArtist(P.w.artist); break;
+    case 'follow': { const h = d.h, i = S.following.indexOf(h); i >= 0 ? S.following.splice(i,1) : S.following.push(h); save(); renderPage(true); break; }
+    case 'newWork': openWorkForm(null); break;
+    case 'fThumb': syncForm(); P.draft.thumb = !P.draft.thumb; renderPage(true); break;
+    case 'askDelete': {
+      const mine = P.type === 'form';
+      modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgT"><h2 id="dlgT">作品を削除</h2><p>${mine ? 'この作品をマイ美術館から削除してもよろしいですか？元に戻せません。' : 'この作品をコレクションから削除してもよろしいですか？元に戻せません。'}</p>
+        <div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doDelete">削除</button></div>
+        ${!mine ? `<button class="linkbtn" style="justify-self:center;margin-top:8px" data-act="askBlock">この作者をブロックする</button>` : ''}</div>`); break; }
+    case 'askBlock': { const a = P.w.artist; modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgB"><h2 id="dlgB">@${esc(a.handle)} をブロック</h2><p>この人の作品はコレクションから見えなくなり、今後すれ違っても届きません。設定からいつでも解除できます。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doBlock">ブロック</button></div></div>`); break; }
+    case 'doBlock': { const a = P.w.artist; S.blocked.push({ name:a.name, handle:a.handle }); save(); closeFx(); UI.pages = UI.pages.filter(p => p.type !== 'detail' && !(p.kind === 'artist' && p.artist.handle === a.handle)); toast(`@${a.handle} をブロックしました`); render(); break; }
+    case 'modalBg': if (e.target === b) closeFx(); break;
+    case 'modalCancel': closeFx(); break;
+    case 'doDelete': {
+      closeFx();
+      if (P.type === 'form'){ S.myWorks = S.myWorks.filter(w => w.id !== P.id); if (S.thumbId === P.id) S.thumbId = S.myWorks[0]?.id || null; toast('作品を削除しました'); }
+      else { S.collection = S.collection.filter(c => c.id !== P.c.id); toast('コレクションから削除しました'); }
+      save(); pop(); break; }
+    case 'editProfile': push({ type:'settings', page:'edit', form:{ name:S.me.name, handle:S.me.handle, bio:S.me.bio, avatarSeed:S.me.avatarSeed } }); break;
+    case 'shuffleAv': P.form = { name:$('#pname').value, handle:$('#phandle').value, bio:$('#pbio').value, avatarSeed: Math.floor(Math.random()*1e6) }; renderPage(true); break;
+    case 'tPass': S.settings.passMode = !S.settings.passMode; save(); renderPage(true); break;
+    case 'tNotifyPass': S.settings.notifyPass = !S.settings.notifyPass; save(); renderPage(true); break;
+    case 'tNotifyGacha': S.settings.notifyGacha = !S.settings.notifyGacha; save(); renderPage(true); break;
+    case 'tPrivate': S.me.private = !S.me.private; save(); renderPage(true); break;
+    case 'askReset': modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgR"><h2 id="dlgR">データを初期化</h2><p>受け取った作品・マイ美術館・設定をすべて消して、最初の状態に戻します。元に戻せません。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doReset">初期化</button></div></div>`); break;
+    case 'doReset': closeFx(); S = seedState(); S.thumbId = S.myWorks[0].id; save(); UI.pages = []; UI.tab = 'home'; UI.carIndex = 0; render(); toast('データを初期化しました'); break;
+    default:
+      if (d.act?.startsWith('go:')) push({ type:'settings', page: d.act.slice(3) });
+      else if (d.act?.startsWith('noop:')) toast('デモ版のため、この機能は準備中です');
+  }
+});
+// tapping empty map area zooms back out
+document.addEventListener('click', e => { const map = e.target.closest('#map'); if (map && UI.selPin && !e.target.closest('.pin, .mcard') && !map.dataset.justDragged) zoomOutMap(); });
+
+document.addEventListener('input', e => {
+  const id = e.target.id;
+  if (id === 'sq'){ UI.sq = e.target.value; const pos = e.target.selectionStart; render(); const i = $('#sq'); i.focus(); i.setSelectionRange(pos, pos); }
+  if (id === 'ftitle') $('#tcnt').textContent = `${e.target.value.length}/30`;
+  if (id === 'fcap') $('#ccnt').textContent = `${e.target.value.length}/500`;
+  if (id === 'ftag' && !e.isComposing){ syncForm(); const pos = e.target.selectionStart; renderPage(true); const i = $('#ftag'); i.focus(); i.setSelectionRange(pos, pos); }
+});
+document.addEventListener('compositionend', e => { if (e.target.id === 'ftag') e.target.dispatchEvent(new Event('input', { bubbles:true })); });
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'ftag' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); const v = e.target.value.replace(/^#/, '').trim(); if (v){ syncForm(); const P = topPage(); if (P.draft.tags.length < 5 && !P.draft.tags.includes(v)) P.draft.tags.push(v); P.draft.q = ''; renderPage(true); $('#ftag').focus(); } }
+  if (e.key === 'Escape'){ if ($('#fx').innerHTML){ closeFx(); if (UI.tab === 'gacha') render(); } else if (UI.pages.length) pop(); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'file') takeFile(e.target.files[0]); });
+document.addEventListener('dragover', e => { const dz = e.target.closest?.('#drop'); if (dz){ e.preventDefault(); dz.classList.add('drag'); } });
+document.addEventListener('dragleave', e => { e.target.closest?.('#drop')?.classList.remove('drag'); });
+document.addEventListener('drop', e => { const dz = e.target.closest?.('#drop'); if (dz){ e.preventDefault(); takeFile(e.dataTransfer.files[0]); } });
+document.addEventListener('submit', e => {
+  e.preventDefault(); const P = topPage();
+  if (e.target.id === 'workForm'){
+    syncForm(); const d = P.draft, er = $('#ferr');
+    const msg = !d.img && d.seed == null ? '作品の画像を選んでください。' : !d.title.trim() ? 'タイトルを入力してください。' : !d.tags.length ? 'タグを1つ以上つけてください。' : '';
+    if (msg){ er.textContent = msg; er.hidden = false; return; }
+    const data = { title: d.title.trim(), desc: d.desc.trim(), tags: d.tags.slice(), aspect: d.aspect, img: d.img || undefined, seed: d.img ? undefined : d.seed, style: d.style };
+    let id = P.id;
+    if (id) Object.assign(S.myWorks.find(w => w.id === id), data); else { id = uid(); S.myWorks.unshift({ id, at: Date.now(), ...data }); }
+    if (d.thumb) S.thumbId = id; else if (S.thumbId === id) S.thumbId = S.myWorks.find(w => w.id !== id)?.id || id;
+    save(); pop(); toast(P.id ? '作品を更新しました' : d.thumb ? '作品を追加し、すれ違い通信のサムネに設定しました' : '作品をマイ美術館に追加しました');
+  }
+  if (e.target.id === 'profForm'){
+    const name = $('#pname').value.trim(), handle = $('#phandle').value.trim(), bio = $('#pbio').value, er = $('#perr');
+    const msg = !name ? '名前を入力してください。' : !/^[A-Za-z0-9._]{3,24}$/.test(handle) ? 'ユーザーネームは半角英数字・ピリオド・アンダーバーで3〜24文字にしてください。' : '';
+    if (msg){ er.textContent = msg; er.hidden = false; return; }
+    Object.assign(S.me, { name, handle, bio, avatarSeed: P.form.avatarSeed }); save(); pop(); toast('プロフィールを保存しました');
+  }
+});
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (UI.tab === 'home' && !UI.pages.length) render(); }, 200); });
+
+render();
+</script>
+
+</body>
+</html>
