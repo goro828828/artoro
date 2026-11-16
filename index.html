@@ -913,6 +913,7 @@ function render(){
   rollDay();
   $('#root').innerHTML = { home:viewHome, gacha:viewGacha, me:viewMe, settings:viewSettings }[UI.tab]();
   $('#nav').innerHTML = navHTML();
+  document.querySelector('.nav').hidden = UI.tab === 'gacha' && !!UI.gPhase;   // 「地球儀をタップ！」の画面ではタブバーを出さない
   if (UI.tab === 'home'){ UI.homeMode === 'map' ? bindMap() : bindCarousel(); }
   if (UI.tab === 'gacha') runGlobe(); else cancelAnimationFrame(globeRAF);
   renderPage();
