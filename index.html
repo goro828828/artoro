@@ -526,6 +526,13 @@ const Sound = (() => {
     confirm: t => { tone(seBus, { f: mtof(84), t, dur: .16, type: 'triangle', vol: .16, a: .003, dec: .16 }); tone(seBus, { f: mtof(91), t: t + .075, dur: .28, type: 'triangle', vol: .16, a: .003, dec: .28 }); },
     cancel:  t => { tone(seBus, { f: mtof(79), t, dur: .12, vol: .14, a: .003, dec: .12 }); tone(seBus, { f: mtof(72), t: t + .07, dur: .2, vol: .12, a: .003, dec: .2 }); },
     zoom:    t => { tone(seBus, { f: 320, t, dur: .28, glide: 1300, vol: .11, a: .01, dec: .3 }); noise(seBus, { t, dur: .3, vol: .06, type: 'bandpass', f: 500, f2: 4000, q: 2 }); },
+    // ホームの「作品／地図」切り替え：「ぽわん」とやわらかく丸い音（ノイズなし。少し音程が上がって、ふんわり残響）
+    modeSwitch: t => { const o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), g2 = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(700, t + .09); o.frequency.exponentialRampToValueAtTime(660, t + .4);
+      o2.type = 'sine'; o2.frequency.setValueAtTime(840, t); o2.frequency.exponentialRampToValueAtTime(1400, t + .09); o2.frequency.exponentialRampToValueAtTime(1320, t + .4);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.13, t + .025); g.gain.exponentialRampToValueAtTime(.0001, t + .42);
+      g2.gain.setValueAtTime(0, t); g2.gain.linearRampToValueAtTime(.025, t + .025); g2.gain.exponentialRampToValueAtTime(.0001, t + .25);
+      o.connect(g); g.connect(wet); o2.connect(g2); g2.connect(wet); o.start(t); o2.start(t); o.stop(t + .45); o2.stop(t + .3); },
     whoosh:  t => noise(seBus, { t, dur: .5, vol: .12, type: 'bandpass', f: 250, f2: 3000, q: 1.5 }),
     rush:    t => { [0,4,7,12,16,19].forEach((k, n) => tone(seBus, { f: mtof(72 + k), t: t + n * .05, dur: .2, type: 'triangle', vol: .07, a: .003, dec: .2 })); noise(seBus, { t, dur: .7, vol: .1, type: 'bandpass', f: 300, f2: 5000 }); },
     // ガチャの虹：今どきのガチャ演出の定番の組み立て（溜め → 当たり → 余韻）
@@ -1271,7 +1278,7 @@ function seFor(b, e){
   if (['draw','doPick','doDelete','doBlock','doReset','fxMuseum','fxColl','passAlbum'].includes(a)) return 'confirm';
   if (['back','modalCancel','fxClose'].includes(a)) return 'cancel';
   if (a === 'modalBg') return e.target === b ? 'cancel' : null;
-  if (a === 'mode') return 'whoosh';
+  if (a === 'mode') return 'modeSwitch';
   if (b.dataset.pin || b.dataset.wi !== undefined || a === 'openC' || a === 'openEnc') return 'zoom';
   if (b.dataset.ci !== undefined) return +b.dataset.ci === UI.carIndex ? 'zoom' : 'tap';
   if (b.getAttribute('role') === 'switch') return 'toggle';
