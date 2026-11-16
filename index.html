@@ -63,11 +63,13 @@ img{display:block}
 .chead.shadow{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 
 /* ---------- mode switch (pass <-> map) ---------- */
-.mode{width:64px;height:34px;border-radius:17px;position:relative;background:var(--lime);transition:background .35s;box-shadow:0 0 0 4px rgba(181,216,15,.25)}
-.mode .knob{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;display:grid;place-items:center;transition:transform .35s cubic-bezier(.4,1.4,.5,1);box-shadow:0 1px 4px rgba(0,0,0,.18)}
-.mode .knob svg{width:18px;height:18px}
-.mode[aria-checked="true"]{background:var(--blue);box-shadow:0 0 0 4px rgba(74,155,245,.22)}
-.mode[aria-checked="true"] .knob{transform:translateX(30px)}
+.mode{width:76px;height:42px;position:relative;background:none;filter:drop-shadow(0 2px 6px rgba(181,216,15,.45));transition:filter .35s}
+.mode::before{content:"";position:absolute;top:7px;left:22px;width:54px;height:28px;border-radius:14px;background:linear-gradient(90deg,#A8D00A,#DDF27A);transition:left .35s cubic-bezier(.4,1.4,.5,1),background .35s}
+.mode .knob{position:absolute;top:0;left:0;width:42px;height:42px;border-radius:50%;background:#fff;border:5px solid var(--lime);box-sizing:border-box;display:grid;place-items:center;transition:transform .35s cubic-bezier(.4,1.4,.5,1),border-color .35s;box-shadow:inset 0 1px 3px rgba(0,0,0,.12)}
+.mode .knob svg{width:20px;height:20px}
+.mode[aria-checked="true"]{filter:drop-shadow(0 2px 6px rgba(74,155,245,.4))}
+.mode[aria-checked="true"]::before{left:0;background:linear-gradient(90deg,#8EC2FF,#3D8BF0)}
+.mode[aria-checked="true"] .knob{transform:translateX(34px);border-color:var(--blue)}
 .whiteout{position:fixed;inset:0;z-index:95;background:var(--cream);opacity:0;pointer-events:none;transition:opacity .28s ease}
 .whiteout.on{opacity:1}
 
@@ -268,7 +270,7 @@ img{display:block}
 .sw[aria-checked="true"]::after{transform:translateX(18px)}
 .err{color:var(--coral);font-size:12px;margin:0;text-align:center}
 .done{display:flex;justify-content:center;padding-top:20px}
-.done .pbtn{background:#F01E14;min-width:84px}
+.done .pbtn{background:#F01E14;min-width:108px;height:36px;border-radius:18px}
 
 /* settings */
 .search{display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:12px;padding:0 12px;height:38px;margin-top:4px}
@@ -336,10 +338,10 @@ const I = {
   home:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.8 11h2.7v9.3h5v-6h3v6h5V11h2.7z"/></svg>',
   gacha:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.4 12h17.2a8.6 8.6 0 0 1-17.2 0z" fill="currentColor"/></svg>',
   user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.3 18.4c1.3-2.3 3.3-3.4 5.7-3.4s4.4 1.1 5.7 3.4"/></svg>',
-  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.3 3h3.4l.5 2.4 1.7.9 2.3-.8 1.7 2.9-1.8 1.6v2l1.8 1.6-1.7 2.9-2.3-.8-1.7.9-.5 2.4h-3.4l-.5-2.4-1.7-.9-2.3.8-1.7-2.9L5.9 13v-2L4.1 9.4l1.7-2.9 2.3.8 1.7-.9z"/><circle cx="12" cy="12" r="2.8"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.08 4.85L10.40 1.93L13.60 1.93L13.92 4.85L15.70 5.59L18.00 3.75L20.25 6.00L18.41 8.30L19.15 10.08L22.07 10.40L22.07 13.60L19.15 13.92L18.41 15.70L20.25 18.00L18.00 20.25L15.70 18.41L13.92 19.15L13.60 22.07L10.40 22.07L10.08 19.15L8.30 18.41L6.00 20.25L3.75 18.00L5.59 15.70L4.85 13.92L1.93 13.60L1.93 10.40L4.85 10.08L5.59 8.30L3.75 6.00L6.00 3.75L8.30 5.59Z"/><circle cx="12" cy="12" r="3.1"/></svg>',
   museum:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 9 12 4l9 5zM5 9v8M9.5 9v8M14.5 9v8M19 9v8M3 20h18"/></svg>',
   bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6.5 16V11a5.5 5.5 0 0 1 11 0v5l1.5 1.8H5zM10 20.3h4"/></svg>',
-  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="#121212" stroke-width="1.8"><rect x="7" y="3.5" width="10" height="17" rx="2.2"/><path d="M4 9v6M20 9v6" stroke-linecap="round"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="#121212" stroke-width="1.8"><rect x="7" y="3.5" width="10" height="17" rx="2.2" fill="#DDEFFF"/><path d="M4 9v6M20 9v6" stroke-linecap="round"/></svg>',
   mappin:'<svg viewBox="0 0 24 24" fill="none" stroke="#4A9BF5" stroke-width="1.9"><path d="M12 15.5s-4.2-4-4.2-7.1a4.2 4.2 0 0 1 8.4 0c0 3.1-4.2 7.1-4.2 7.1z" fill="#F4553B" stroke="none"/><circle cx="12" cy="8.4" r="1.6" fill="#fff" stroke="none"/><ellipse cx="12" cy="17.5" rx="6" ry="2.2"/></svg>',
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6 8.5 12l6 6"/></svg>',
   chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>',
@@ -640,9 +642,7 @@ function viewGacha(){
     <header class="chead shadow wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-tab="me" aria-label="マイページ">${I.user}</button></header>
     <div class="coins" aria-label="作品コイン ${n}枚">${I.coin}<span>${n}</span></div>
     <div class="wrap">
-      <div class="catrow"><button class="arrow" data-act="catPrev" aria-label="前のジャンル">${I.left}</button>
-        <button class="cat" style="background:${cat.color}" data-act="catNext" aria-label="ジャンル：${cat.label}（タップで切り替え）">${cat.label}</button>
-        <button class="arrow" data-act="catNext" aria-label="次のジャンル">${I.right}</button></div>
+      <div class="catrow"><button class="cat" style="background:${cat.color}" data-act="catNext" aria-label="ジャンル：${cat.label}（タップかスワイプで切り替え）">${cat.label}</button></div>
       <div class="stage" id="stage">
         <span class="shadow"></span>
         <svg class="globe" viewBox="0 0 300 300" aria-hidden="true">
@@ -970,9 +970,8 @@ document.addEventListener('click', e => {
     case 'fThumb': syncForm(); P.draft.thumb = !P.draft.thumb; renderPage(true); break;
     case 'askDelete': {
       const mine = P.type === 'form';
-      modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgT"><h2 id="dlgT">作品を削除</h2><p>${mine ? 'この作品をマイ美術館から削除してもよろしいですか？元に戻せません。' : 'この作品をコレクションから削除してもよろしいですか？元に戻せません。'}</p>
-        <div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doDelete">削除</button></div>
-        ${!mine ? `<button class="linkbtn" style="justify-self:center;margin-top:8px" data-act="askBlock">この作者をブロックする</button>` : ''}</div>`); break; }
+      modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgT"><h2 id="dlgT">作品を削除</h2><p>この作品を削除してもよろしいですか？</p>
+        <div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doDelete">削除</button></div></div>`); break; }
     case 'askBlock': { const a = P.w.artist; modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgB"><h2 id="dlgB">@${esc(a.handle)} をブロック</h2><p>この人の作品はコレクションから見えなくなり、今後すれ違っても届きません。設定からいつでも解除できます。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doBlock">ブロック</button></div></div>`); break; }
     case 'doBlock': { const a = P.w.artist; S.blocked.push({ name:a.name, handle:a.handle }); save(); closeFx(); UI.pages = UI.pages.filter(p => p.type !== 'detail' && !(p.kind === 'artist' && p.artist.handle === a.handle)); toast(`@${a.handle} をブロックしました`); render(); break; }
     case 'modalBg': if (e.target === b) closeFx(); break;
