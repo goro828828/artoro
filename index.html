@@ -491,6 +491,7 @@ function museumOf(artist){
 
 /* ================= state ================= */
 const KEY = 'artoro.v2';
+const COIN_DAILY = 100;   // 1日に配られる作品コインの枚数
 const GACHA_CATS = [
   { label:'ランダム', color:'#FFC234', tags:null, props:['envelope','kraft','letter'] },
   { label:'水彩画', color:'#A6CE0E', tags:['水彩画'], props:['wpalette','cups'] },
@@ -515,7 +516,7 @@ function seedState(){
     ],
     thumbId: null, collection, following: [], blocked: [], notifications: [],
     passLog: { date: todayKey(), count: 5 },
-    coins: { date: todayKey(), n: 5 },
+    coins: { date: todayKey(), n: COIN_DAILY },
     settings: { passMode:true, dailyLimit:20, receiveTags:[], location:'city', notifyPass:true, notifyGacha:true },
   };
 }
@@ -523,8 +524,9 @@ let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
 if (!S || !S.me) S = seedState();
 if (!S.myWorks.some(w => w.id === S.thumbId)) S.thumbId = S.myWorks[0]?.id || null;
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast('この端末に保存できませんでした。画像を小さくして試してください。'); } }
-function rollDay(){ const t = todayKey(); if (S.coins.date !== t) S.coins = { date:t, n:5 }; if (S.passLog.date !== t) S.passLog = { date:t, count:0 }; }
+function rollDay(){ const t = todayKey(); if (S.coins.date !== t) S.coins = { date:t, n:COIN_DAILY }; if (S.passLog.date !== t) S.passLog = { date:t, count:0 }; }
 rollDay();
+if (S.coinDaily !== COIN_DAILY){ S.coins = { date: todayKey(), n: COIN_DAILY }; S.coinDaily = COIN_DAILY; save(); }   // 5枚の頃のデータを100枚にそろえる
 
 const UI = { tab:'home', homeMode:'pass', carIndex:0, ptab:'mine', pfilter:'all', cat:0, pages:[], selPin:null, sq:'' };
 const isBlocked = h => S.blocked.some(b => b.handle === h);
@@ -682,7 +684,7 @@ function viewGacha(){
         <span class="minicat" style="background:${cat.color}">${cat.label}</span>
         <div class="gsub">ガチャを回す</div>
       </div>
-      <p class="gnote">${n > 0 ? '作品コインは毎日5枚配られます（0:00にリセット）。ガチャで届いた作品には場所が残りません。' : '今日のコインを使い切りました。明日 0:00 に5枚配られます。'}</p>`}
+      <p class="gnote">${n > 0 ? '作品コインは毎日100枚配られます（0:00にリセット）。ガチャで届いた作品には場所が残りません。' : '今日のコインを使い切りました。明日 0:00 に100枚配られます。'}</p>`}
     </div></div>`;
 }
 let globeRAF = 0;
@@ -721,6 +723,7 @@ function draw(){
   const c = { id: uid(), source:'gacha', place:null, at: Date.now(), work: w };
   S.coins.n--; S.collection.push(c); if (S.settings.notifyGacha) notify(`ガチャで「${w.title}」（${w.artist.name}）が届きました`, c); save();
   UI.pending = { c, cat };
+  const cn = $('.coins span'); if (cn) cn.textContent = S.coins.n;   // 押した瞬間にコインの枚数を減らして見せる
   const btn = $('[data-act=draw]'); if (btn) btn.disabled = true;
   rainbow(() => { UI.gPhase = 'tap'; render(); $('#stage')?.focus({ preventScroll:true }); });
 }
@@ -898,7 +901,7 @@ function pageSettings(P){
       <div class="pillbtns" style="padding-top:6px"><button class="pbtn red" data-act="askReset">データを初期化</button></div><p class="help" style="text-align:center">デモ版のデータは、このブラウザの中だけに保存されています。</p>`); }
   if (p === 'help') return shell('ヘルプ', `<div class="sgroup"><h3>すれ違い通信とは？</h3><p style="margin:0">ARTOROを開いた人どうしが近くを通ると、おたがいが「サムネ」に設定した作品が自動で届きます。フォロワー数やおすすめ表示に左右されずに、出会った人へ作品が届きます。</p></div>
       <div class="sgroup"><h3>ホームの地図</h3><p style="margin:0">右上のスイッチで、作品を出会った場所の地図に切り替えられます。作品をタップすると近づき、もう一度タップすると相手の美術館へ移ります。</p></div>
-      <div class="sgroup"><h3>ガチャと作品コイン</h3><p style="margin:0">近くにユーザーがいなくても作品と出会えるように、毎日5枚の作品コインが配られます。1枚で1回ガチャを回せます。ジャンルは地球儀を左右にスワイプして選べます。</p></div>`);
+      <div class="sgroup"><h3>ガチャと作品コイン</h3><p style="margin:0">近くにユーザーがいなくても作品と出会えるように、毎日100枚の作品コインが配られます。1枚で1回ガチャを回せます。ジャンルは地球儀を左右にスワイプして選べます。</p></div>`);
   if (p === 'about') return shell('ARTOROについて', `<div class="brand-big">ARTORO</div><p style="text-align:center;color:var(--muted);margin:2px 0 18px">アートロ｜すれ違いで作品を交換するアプリ</p>
       <p>SNSでは、アルゴリズムのせいで作品が多くの人に届きにくいことがあります。ARTOROは、アルゴリズムにたよらず、すれ違った人どうしで作品を送り、受け取れる場所をつくるために生まれました。</p><dl class="kv"><dt>バージョン</dt><dd>0.2.0（Web デモ）</dd></dl>`);
   if (p === 'notifs'){ const n = S.notifications.slice().reverse();
