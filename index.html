@@ -188,11 +188,10 @@ img{display:block}
 .gnote{font-size:11px;color:var(--muted);text-align:center;margin:8px 0 0}
 /* gacha: rainbow launch → tap the globe */
 .rainbow{position:fixed;inset:0;z-index:96;pointer-events:none;overflow:hidden}
-.rainbow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.rainbow g{animation:rbFly .5s .5s cubic-bezier(.5,0,.9,.4) forwards}
-.rainbow path{fill:none;stroke-width:10px;stroke-linecap:round;stroke-dasharray:100 100;stroke-dashoffset:100;animation:rbDraw .55s cubic-bezier(.2,.9,.3,1.15) forwards}
-@keyframes rbDraw{to{stroke-dashoffset:0}}
-@keyframes rbFly{to{transform:translate(45px,-45px);opacity:0}}
+/* 斜め45°に回した枠の中で、色の帯が左下→右上へ次々に飛ぶ。真ん中のタイミングで画面を埋め尽くす */
+.rainbow .lane{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-45deg)}
+.rainbow .bar{position:absolute;left:0;border-radius:999px;transform:translateX(-105%);animation:barFly var(--d) var(--delay) cubic-bezier(.45,.05,.4,1) forwards}
+@keyframes barFly{0%{transform:translateX(-105%)}40%{transform:translateX(-34%)}62%{transform:translateX(-6%)}100%{transform:translateX(75%)}}
 .tapcall{padding-top:34px;text-align:center;font-weight:800;font-size:28px;letter-spacing:.06em;color:var(--coral);animation:tapBounce 1s ease-in-out infinite}
 .tapcall.hit{animation:none;color:var(--blue)}
 @keyframes tapBounce{50%{transform:scale(1.08)}}
@@ -724,19 +723,21 @@ function draw(){
   const btn = $('[data-act=draw]'); if (btn) btn.disabled = true;
   rainbow(() => { UI.gPhase = 'tap'; render(); $('#stage')?.focus({ preventScroll:true }); });
 }
-// 左下から右上へ虹がビョーンと伸びて飛んでいき、クリーム色のホワイトアウトで画面が変わる
+// ラフどおり：7色の帯が左下から右上へ次々に飛んでいき、画面を埋め尽くしたところで画面が変わり、帯はそのまま右上へ抜ける
 function rainbow(done){
   if (reduced){ done(); return; }
   const cols = ['#FF4D4D','#FF9F1C','#FFD23F','#3EC46D','#3FA9F5','#4D5BFF','#9B5DE5'];
+  const W = innerWidth, H = innerHeight, D = Math.ceil(Math.hypot(W, H)) + 40, N = 21, h = D / N;
   const el = document.createElement('div'); el.className = 'rainbow'; el.setAttribute('aria-hidden', 'true');
-  // 画面の実寸で描く：左下の外から右上の外へ、左上にふくらむ太い虹のアーチ（帯は斜め方向にずらして重ねる）
-  const W = innerWidth, H = innerHeight, gap = 9;
-  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}"><g>${cols.map((c, i) => { const o = (i - 3) * gap;
-    return `<path d="M${-70 + o} ${H + 70 + o} Q ${W * .02 + o} ${H * .12 + o} ${W + 70 + o} ${-70 + o}" stroke="${c}" pathLength="100" style="animation-delay:${(i * .025).toFixed(3)}s"/>`; }).join('')}</g></svg>`;
+  let bars = '';
+  for (let i = 0; i < N; i++){
+    const delay = (Math.random() * .15).toFixed(3), dur = (1 + Math.random() * .08).toFixed(3);
+    bars += `<span class="bar" style="top:${(i * h - 3).toFixed(1)}px;height:${(h + 6).toFixed(1)}px;width:${(D * 1.6).toFixed(0)}px;background:${cols[i % cols.length]};--delay:${delay}s;--d:${dur}s"></span>`;
+  }
+  el.innerHTML = `<div class="lane" style="width:${D}px;height:${D}px">${bars}</div>`;
   document.body.appendChild(el);
-  const wo = $('#whiteout');
-  setTimeout(() => wo.classList.add('on'), 700);
-  setTimeout(() => { done(); el.remove(); setTimeout(() => wo.classList.remove('on'), 80); }, 1000);
+  setTimeout(done, 640);                 // 帯で画面が埋まっている間に切り替える
+  setTimeout(() => el.remove(), 1400);
 }
 function crack(){
   if (UI.gPhase !== 'tap' || !UI.pending) return;
