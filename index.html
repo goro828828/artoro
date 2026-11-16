@@ -868,7 +868,7 @@ function viewGacha(){
   rollDay(); const cat = GACHA_CATS[UI.cat], n = S.coins.n, tap = !!UI.gPhase;
   const land = 'M20,90c18-30 52-34 70-18 10 9 4 24 20 30 22 8 30 34 12 46-20 13-46-6-62-10-22-5-48-14-40-48zM150,60c26-14 64-8 78 12 9 13-6 22-2 36 5 17 26 22 18 40-10 20-44 14-58 0-12-12-6-30-22-40-20-12-34-36-14-48zM290,120c16-12 44-10 54 6 8 13-8 26-24 30-22 5-46-20-30-36zM90,190c24-6 52 6 52 22s-30 26-50 18-24-36-2-40z';
   return `<div class="app pad-nav" style="position:relative">
-    <header class="chead shadow wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-act="notifs" aria-label="お知らせ">${I.bell}${S.notifications.some(n => !n.read) ? '<span class="dot"></span>' : ''}</button></header>
+    <header class="chead wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-act="notifs" aria-label="お知らせ">${I.bell}${S.notifications.some(n => !n.read) ? '<span class="dot"></span>' : ''}</button></header>
     <div class="coins" aria-label="作品コイン ${n}枚">${I.coin}<span>${n}</span></div>
     <div class="wrap">
       ${tap ? `<div class="tapcall ${UI.gPhase === 'spin' ? 'hit' : ''}" id="tapcall">${UI.gPhase === 'spin' ? '…！' : '地球儀をタップ！'}</div>` : `<div class="catrow"><button class="arrow" data-act="catPrev" aria-label="前のジャンル">${I.left}</button>
