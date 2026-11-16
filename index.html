@@ -533,6 +533,9 @@ const Sound = (() => {
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.13, t + .025); g.gain.exponentialRampToValueAtTime(.0001, t + .42);
       g2.gain.setValueAtTime(0, t); g2.gain.linearRampToValueAtTime(.025, t + .025); g2.gain.exponentialRampToValueAtTime(.0001, t + .25);
       o.connect(g); g.connect(wet); o2.connect(g2); g2.connect(wet); o.start(t); o2.start(t); o.stop(t + .45); o2.stop(t + .3); },
+    // ホームの作品一覧をスライドしたとき、1枚通り過ぎるごとに「ぽこ」。音の高さを少しずつ変えて「ぽこぽこぽこ」にする
+    poko: (t, n = 0) => { const m = [67,69,72,74,76,79][((n % 6) + 6) % 6], f = mtof(m);
+      tone(seBus, { f: f * .62, t, dur: .07, glide: f, vol: .14, a: .002, dec: .11 }); tone(seBus, { f: f * 2, t, dur: .04, vol: .018, a: .001, dec: .04 }); },
     whoosh:  t => noise(seBus, { t, dur: .5, vol: .12, type: 'bandpass', f: 250, f2: 3000, q: 1.5 }),
     rush:    t => { [0,4,7,12,16,19].forEach((k, n) => tone(seBus, { f: mtof(72 + k), t: t + n * .05, dur: .2, type: 'triangle', vol: .07, a: .003, dec: .2 })); noise(seBus, { t, dur: .7, vol: .1, type: 'bandpass', f: 300, f2: 5000 }); },
     // ガチャの虹：今どきのガチャ演出の定番の組み立て（溜め → 当たり → 余韻）
@@ -560,7 +563,7 @@ const Sound = (() => {
     lift:    t => tone(seBus, { f: 420, t, dur: .12, glide: 640, vol: .14, a: .003, dec: .12 }),
     drop:    t => tone(seBus, { f: 520, t, dur: .12, glide: 300, vol: .14, a: .003, dec: .12 }),
   };
-  function se(name, delay = 0){ if (!ctx || !unlocked || S.settings.se === false || Date.now() < muteUntil || !SE[name]) return; SE[name](ctx.currentTime + .005 + delay); }
+  function se(name, delay = 0, arg){ if (!ctx || !unlocked || S.settings.se === false || Date.now() < muteUntil || !SE[name]) return; SE[name](ctx.currentTime + .005 + delay, arg); }
   document.addEventListener('visibilitychange', () => { if (!ctx || !unlocked) return; document.hidden ? ctx.suspend() : ctx.resume(); });
   return { unlock, bgm, se, applyVol, muteFor: ms => { muteUntil = Date.now() + ms; }, get current(){ return cur; }, get ready(){ return unlocked; } };
 })();
@@ -829,7 +832,7 @@ function bindCarousel(){
     const mid = car.scrollLeft + car.clientWidth / 2; let best = 0, bd = 1e9;
     items.forEach((it, i) => { const c = it.offsetLeft + it.offsetWidth / 2, d = (c - mid) / it.offsetWidth; const ad = Math.min(1, Math.abs(d));
       it.style.transform = `scale(${1 - ad * .26})`; if (Math.abs(d) < bd){ bd = Math.abs(d); best = i; } });
-    if (best !== UI.carIndex){ UI.carIndex = best; $('#carInfo').innerHTML = infoCard(list[best], { enc:true }); $('#todayLbl').innerHTML = `${today ? '今日の作品' : '最近の作品'} <b>${best + 1} / ${list.length}</b>`; }
+    if (best !== UI.carIndex){ Sound.se('poko', 0, best); UI.carIndex = best; $('#carInfo').innerHTML = infoCard(list[best], { enc:true }); $('#todayLbl').innerHTML = `${today ? '今日の作品' : '最近の作品'} <b>${best + 1} / ${list.length}</b>`; }
   };
   const it = items[UI.carIndex]; if (it) car.scrollLeft = it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2;
   update(); let raf; car.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive:true });
