@@ -642,7 +642,9 @@ function viewGacha(){
     <header class="chead shadow wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-tab="me" aria-label="マイページ">${I.user}</button></header>
     <div class="coins" aria-label="作品コイン ${n}枚">${I.coin}<span>${n}</span></div>
     <div class="wrap">
-      <div class="catrow"><button class="cat" style="background:${cat.color}" data-act="catNext" aria-label="ジャンル：${cat.label}（タップかスワイプで切り替え）">${cat.label}</button></div>
+      <div class="catrow"><button class="arrow" data-act="catPrev" aria-label="前のジャンル">${I.left}</button>
+        <button class="cat" style="background:${cat.color}" data-act="catNext" aria-label="ジャンル：${cat.label}（タップで切り替え）">${cat.label}</button>
+        <button class="arrow" data-act="catNext" aria-label="次のジャンル">${I.right}</button></div>
       <div class="stage" id="stage">
         <span class="shadow"></span>
         <svg class="globe" viewBox="0 0 300 300" aria-hidden="true">
