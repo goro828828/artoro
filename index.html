@@ -340,6 +340,7 @@ img{display:block}
 .radio[aria-checked="true"] .o{border-color:var(--coral)}
 .radio[aria-checked="true"] .o::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--coral)}
 .help{font-size:12px;color:var(--muted);margin:10px 2px 0}
+.range{width:100%;accent-color:var(--coral);margin:6px 0}
 .chips{display:flex;flex-wrap:wrap;gap:6px;padding-top:6px}
 .chips button{height:28px;padding:0 12px;border-radius:14px;background:var(--bg2);font-size:12px;font-weight:700;color:#666}
 .chips button[aria-pressed="true"]{background:var(--blue);color:#fff}
@@ -398,6 +399,7 @@ const I = {
   heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 19.5s-7-4.3-7-9.5A4 4 0 0 1 12 7.6 4 4 0 0 1 19 10c0 5.2-7 9.5-7 9.5z"/></svg>',
   pics:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m4 17 5-5 4 4 2.5-2.5L20 18"/><circle cx="15.5" cy="9.5" r="1.5"/></svg>',
   pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>',
+  music:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
   pass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>',
   pen:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 20h4L19 9l-4-4L4 16zM16.5 3.5l4 4 1-1a1.4 1.4 0 0 0 0-2l-2-2a1.4 1.4 0 0 0-2 0z"/></svg>',
   search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>',
@@ -428,6 +430,105 @@ const jdate = ts => { const d = new Date(ts); return `${d.getFullYear()}年${d.g
 function ago(ts){ const m = Math.round((Date.now() - ts) / 60000); if (m < 1) return 'たった今'; if (m < 60) return `${m}分前`; const h = Math.round(m/60); if (h < 24) return `${h}時間前`; return `${Math.round(h/24)}日前`; }
 function toast(msg){ const t = $('#toast'); t.innerHTML = `<div class="toast">${esc(msg)}</div>`; clearTimeout(toast.t); toast.t = setTimeout(() => t.innerHTML = '', 2600); }
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= sound：BGMと効果音（音声ファイルは使わず、Web Audioでその場で合成） ================= */
+const Sound = (() => {
+  let ctx = null, master, bgmBus, seBus, noiseBuf, unlocked = false, want = null, cur = null, track = null, trackGain = null, step = 0, nextT = 0, timer = null, muteUntil = 0;
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  function init(){
+    if (ctx) return; const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    ctx = new AC(); master = ctx.createGain(); master.connect(ctx.destination);
+    const warm = ctx.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 6500; warm.connect(master);
+    bgmBus = ctx.createGain(); bgmBus.connect(warm); seBus = ctx.createGain(); seBus.connect(master);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    applyVol();
+  }
+  function applyVol(){ if (!ctx) return; const st = S.settings; master.gain.value = st.vol ?? .7;
+    bgmBus.gain.setTargetAtTime(st.bgm === false ? 0 : .55, ctx.currentTime, .08); seBus.gain.value = st.se === false ? 0 : 1; }
+  // ブラウザの決まりで、最初のタップから音を出す
+  function unlock(){ init(); if (!ctx) return; if (ctx.state === 'suspended') ctx.resume(); if (!unlocked){ unlocked = true; if (want){ const w = want; cur = null; bgm(w); } } }
+  // ---- 楽器 ----
+  function tone(dest, { f, t, dur, type = 'sine', vol = .1, a = .005, dec = null, glide = null, detune = 0, filter = null }){
+    const o = ctx.createOscillator(), g = ctx.createGain(), end = t + (dec || dur);
+    o.type = type; o.frequency.setValueAtTime(f, t); if (glide) o.frequency.exponentialRampToValueAtTime(glide, t + dur); o.detune.value = detune;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(.0001, end);
+    let n = o; if (filter){ const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = filter; o.connect(fl); n = fl; }
+    n.connect(g); g.connect(dest); o.start(t); o.stop(end + .05);
+  }
+  function noise(dest, { t, dur, vol = .1, type = 'highpass', f = 6000, f2 = null, q = 1 }){
+    const src = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain(); src.buffer = noiseBuf;
+    fl.type = type; fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur); fl.Q.value = q;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    src.connect(fl); fl.connect(g); g.connect(dest); src.start(t, Math.random() * .5); src.stop(t + dur + .05);
+  }
+  const pluck = (d, m, t, len, vol = .05, type = 'triangle') => tone(d, { f: mtof(m), t, dur: len, type, vol, a: .004, dec: len });
+  const bell = (d, m, t, len, vol = .05) => { tone(d, { f: mtof(m), t, dur: len, vol, a: .002, dec: len }); tone(d, { f: mtof(m) * 2.01, t, dur: len * .5, vol: vol * .35, a: .002, dec: len * .4 }); };
+  const pad = (d, ms, t, len, vol = .02) => ms.forEach(m => [-7, 7].forEach(dt => tone(d, { f: mtof(m), t, dur: len, type: 'sawtooth', vol, a: len * .3, dec: len, detune: dt, filter: 900 })));
+  const kick = (d, t, vol = .3) => tone(d, { f: 150, t, dur: .22, glide: 45, vol, a: .002, dec: .22 });
+  // ---- 曲（16分音符ごとに鳴らす） ----
+  const at = (mel, i, fn) => mel && mel.forEach(([st, m, l]) => { if (st === i) fn(m, l); });
+  const HOME_MEL = [[[0,76,4],[4,74,2],[6,72,2],[8,74,6]], [[0,72,4],[4,71,2],[6,69,2],[8,72,6]], [[0,69,4],[4,72,2],[6,74,2],[8,77,6]], [[0,76,4],[4,74,4],[8,71,8]]];
+  const GACHA_MEL = [[[0,79,2],[2,81,2],[4,79,2],[6,76,2],[8,74,4],[12,76,4]], [[0,74,2],[2,76,2],[4,79,4],[8,81,2],[10,79,2],[12,76,4]], [[0,76,2],[2,74,2],[4,72,4],[8,74,2],[10,76,2],[12,79,4]], [[0,81,4],[4,79,4],[8,84,8]]];
+  const MUSEUM_MEL = [[[0,81,6],[6,78,2],[8,76,8]], [[0,78,6],[6,74,2],[8,73,8]], [[0,74,4],[4,76,4],[8,78,4],[12,81,4]], [[0,83,8],[8,81,8]]];
+  const TRACKS = {
+    // ホーム：やわらかいピアノのアルペジオとベルのメロディ（ハ長調・84）
+    home: { bpm: 84, bars: 8, play(s, t, sd, d){ const b = Math.floor(s / 16), bar = b % 4, i = s % 16, ch = [[60,64,67],[57,60,64],[53,57,60],[55,59,62]][bar];
+      if (i === 0){ pad(d, ch, t, sd * 16, .016); tone(d, { f: mtof(ch[0] - 12), t, dur: sd * 8, type: 'triangle', vol: .09, a: .01, dec: sd * 8 }); }
+      if (i === 8) tone(d, { f: mtof(ch[0] - 12), t, dur: sd * 8, type: 'triangle', vol: .07, a: .01, dec: sd * 8 });
+      if (i % 2 === 0) pluck(d, ch[[0,1,2,1,2,1,0,1][i / 2]] + 12, t, sd * 3, .045);
+      if (b < 4) at(HOME_MEL[bar], i, (m, l) => bell(d, m, t, sd * l * 1.2, .05)); } },
+    // ガチャ：明るくてテンポの速いチップチューン（128）
+    gacha: { bpm: 128, bars: 8, play(s, t, sd, d){ const b = Math.floor(s / 16), bar = b % 4, i = s % 16, ch = [[53,57,60],[55,59,62],[52,55,59],[57,60,64]][bar];
+      if (i === 0 || i === 8) kick(d, t, .3);
+      if (i === 4 || i === 12) noise(d, { t, dur: .12, vol: .09, type: 'bandpass', f: 1800 });
+      if (i % 4 === 2) noise(d, { t, dur: .035, vol: .04, type: 'highpass', f: 7500 });
+      if (i % 2 === 0) tone(d, { f: mtof(ch[0] - (i % 4 === 0 ? 24 : 12)), t, dur: sd * 1.8, type: 'square', vol: .035, a: .003, dec: sd * 1.8, filter: 700 });
+      at(GACHA_MEL[bar], i, (m, l) => tone(d, { f: mtof(m), t, dur: sd * l, type: 'square', vol: .028, a: .004, dec: sd * l * .95, filter: 3500 }));
+      if (i % 2 === 1 && b % 2 === 1) pluck(d, ch[(i >> 1) % 3] + 24, t, sd, .02, 'sine'); } },
+    // マイ美術館・他人の作品：ゆったりしたオルゴール（ニ長調・70）
+    museum: { bpm: 70, bars: 8, play(s, t, sd, d){ const b = Math.floor(s / 16), bar = b % 4, i = s % 16, ch = [[62,66,69],[59,62,66],[55,59,62],[57,61,64]][bar];
+      if (i === 0){ pad(d, ch, t, sd * 16, .013); tone(d, { f: mtof(ch[0] - 12), t, dur: sd * 14, vol: .08, a: .02, dec: sd * 14 }); }
+      if (i % 2 === 0) bell(d, ch[[0,2,1,2,0,2,1,2][i / 2]] + 12, t, sd * 4, .033);
+      if (b < 4) at(MUSEUM_MEL[bar], i, (m, l) => bell(d, m, t, sd * l * 1.3, .05)); } },
+    // 設定：落ち着いたローファイ（88・少しハネる）
+    settings: { bpm: 88, bars: 4, play(s, t, sd, d){ const bar = Math.floor(s / 16) % 4, i = s % 16, ch = [[53,57,60,64],[52,55,59,62],[50,53,57,60],[48,52,55,59]][bar];
+      t += i % 2 === 1 ? sd * .18 : 0;
+      if (i === 0 || i === 10) ch.forEach(m => { tone(d, { f: mtof(m), t, dur: sd * 6, vol: .028, a: .01, dec: sd * 6 }); tone(d, { f: mtof(m) * 2, t, dur: sd * 2, vol: .008, a: .005, dec: sd * 2 }); });
+      if (i === 0 || i === 7 || i === 10) tone(d, { f: 110, t, dur: .18, glide: 42, vol: .2, a: .003, dec: .18 });
+      if (i === 4 || i === 12) noise(d, { t, dur: .1, vol: .05, type: 'bandpass', f: 2200 });
+      if (i % 2 === 0) noise(d, { t, dur: .03, vol: .022, type: 'highpass', f: 8000 });
+      if (i === 0 || i === 6 || i === 10) tone(d, { f: mtof(ch[0] - 12), t, dur: sd * 3, vol: .09, a: .01, dec: sd * 3 }); } },
+  };
+  function sched(){ if (!track || !ctx) return; const sd = 60 / track.bpm / 4;
+    while (nextT < ctx.currentTime + .15){ track.play(step, nextT, sd, trackGain); step = (step + 1) % (16 * track.bars); nextT += sd; } }
+  // 画面が変わったら前の曲をフェードアウトして次の曲へ
+  function bgm(name){
+    want = name; if (!ctx || !unlocked || cur === name) return;
+    if (trackGain){ const g = trackGain; g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setTargetAtTime(0, ctx.currentTime, .25); setTimeout(() => g.disconnect(), 2000); }
+    cur = name; track = TRACKS[name]; if (!track) return;
+    trackGain = ctx.createGain(); trackGain.gain.value = 0; trackGain.gain.setTargetAtTime(1, ctx.currentTime + .15, .45); trackGain.connect(bgmBus);
+    step = 0; nextT = ctx.currentTime + .15; if (!timer) timer = setInterval(sched, 25);
+  }
+  // ---- 効果音 ----
+  const SE = {
+    tap:     t => tone(seBus, { f: 900, t, dur: .06, glide: 620, vol: .17, a: .002, dec: .07 }),
+    confirm: t => { tone(seBus, { f: mtof(84), t, dur: .16, type: 'triangle', vol: .16, a: .003, dec: .16 }); tone(seBus, { f: mtof(91), t: t + .075, dur: .28, type: 'triangle', vol: .16, a: .003, dec: .28 }); },
+    cancel:  t => { tone(seBus, { f: mtof(79), t, dur: .12, vol: .14, a: .003, dec: .12 }); tone(seBus, { f: mtof(72), t: t + .07, dur: .2, vol: .12, a: .003, dec: .2 }); },
+    zoom:    t => { tone(seBus, { f: 320, t, dur: .28, glide: 1300, vol: .11, a: .01, dec: .3 }); noise(seBus, { t, dur: .3, vol: .06, type: 'bandpass', f: 500, f2: 4000, q: 2 }); },
+    whoosh:  t => noise(seBus, { t, dur: .5, vol: .12, type: 'bandpass', f: 250, f2: 3000, q: 1.5 }),
+    rush:    t => { [0,4,7,12,16,19].forEach((k, n) => tone(seBus, { f: mtof(72 + k), t: t + n * .05, dur: .2, type: 'triangle', vol: .07, a: .003, dec: .2 })); noise(seBus, { t, dur: .7, vol: .1, type: 'bandpass', f: 300, f2: 5000 }); },
+    pop:     t => { tone(seBus, { f: 240, t, dur: .18, glide: 70, vol: .3, a: .002, dec: .2 }); tone(seBus, { f: mtof(88), t, dur: .08, type: 'triangle', vol: .12, a: .002, dec: .1 }); },
+    spin:    t => tone(seBus, { f: 200, t, dur: 1.1, glide: 900, type: 'sawtooth', vol: .03, a: .05, dec: 1.1, filter: 1500 }),
+    sparkle: t => [84,88,91,96,100].forEach((m, n) => bell(seBus, m, t + n * .07, .5, .07)),
+    toggle:  t => { tone(seBus, { f: 1400, t, dur: .03, type: 'square', vol: .04, a: .001, dec: .03, filter: 4000 }); tone(seBus, { f: 1800, t: t + .04, dur: .03, type: 'square', vol: .04, a: .001, dec: .03, filter: 4000 }); },
+    lift:    t => tone(seBus, { f: 420, t, dur: .12, glide: 640, vol: .14, a: .003, dec: .12 }),
+    drop:    t => tone(seBus, { f: 520, t, dur: .12, glide: 300, vol: .14, a: .003, dec: .12 }),
+  };
+  function se(name, delay = 0){ if (!ctx || !unlocked || S.settings.se === false || Date.now() < muteUntil || !SE[name]) return; SE[name](ctx.currentTime + .005 + delay); }
+  document.addEventListener('visibilitychange', () => { if (!ctx || !unlocked) return; document.hidden ? ctx.suspend() : ctx.resume(); });
+  return { unlock, bgm, se, applyVol, muteFor: ms => { muteUntil = Date.now() + ms; }, get current(){ return cur; }, get ready(){ return unlocked; } };
+})();
+window.Sound = Sound;
 
 /* ================= generated artwork (stand-ins for real works) ================= */
 const PALETTES = [
@@ -803,12 +904,13 @@ function rainbow(done){
   }
   el.innerHTML = `<div class="lane" style="width:${D}px;height:${D}px">${bars}</div>`;
   document.body.appendChild(el);
+  Sound.se('rush');
   setTimeout(done, 640);                 // 帯で画面が埋まっている間に切り替える
   setTimeout(() => el.remove(), 1400);
 }
 function crack(){
   if (UI.gPhase !== 'tap' || !UI.pending) return;
-  UI.gPhase = 'spin'; $('#stage')?.classList.add('spin');
+  UI.gPhase = 'spin'; $('#stage')?.classList.add('spin'); Sound.se('pop'); Sound.se('spin', .05);
   const tc = $('#tapcall'); if (tc){ tc.textContent = '…！'; tc.classList.add('hit'); }
   setTimeout(showResult, reduced ? 0 : 1100);
 }
@@ -831,6 +933,7 @@ function showResult(){
   const p = UI.pending; if (!p) return; const { c, cat } = p, w = c.work;
   $('#fx').innerHTML = revealHTML(w, `${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(cat.label)}`,
     `<button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxMuseum" data-cid="${c.id}">美術館を見る</button>`, 'ガチャの結果');
+  Sound.se('sparkle', reduced ? 0 : 1.3);
   $('#stage')?.classList.remove('spin');
 }
 function endGacha(){ UI.gPhase = null; UI.pending = null; }
@@ -876,11 +979,11 @@ function viewMe(){
 const LOC_LABEL = { off:'記録しない', city:'エリアまで', precise:'詳細な場所' };
 const SETTINGS = [
   { group:'あなたのアカウント', items:[ ['editProfile','user','プロフィールを編集','名前、ユーザーネーム、自己紹介'], ['go:account','key','アカウントセンター','パスワード、セキュリティ、個人の情報'] ] },
-  { group:'ARTOROの使い方', items:[ ['go:pass','pass','すれ違い通信'], ['go:location','pin','位置情報の記録'], ['go:notify','bell','お知らせ'] ] },
+  { group:'ARTOROの使い方', items:[ ['go:pass','pass','すれ違い通信'], ['go:sound','music','サウンド','BGM・効果音・音量'], ['go:location','pin','位置情報の記録'], ['go:notify','bell','お知らせ'] ] },
   { group:'作品を見られる人', items:[ ['go:privacy','lock','アカウントのプライバシー'], ['go:blocked','block','ブロック済み'] ] },
   { group:'その他の情報とサポート', items:[ ['go:data','data','データとストレージ'], ['go:help','help','ヘルプ'], ['go:about','info','ARTOROについて'] ] },
 ];
-const sval = k => ({ 'go:pass': S.settings.passMode ? 'オン' : 'オフ', 'go:location': LOC_LABEL[S.settings.location], 'go:privacy': S.me.private ? '非公開' : '公開', 'go:blocked': S.blocked.length ? S.blocked.length + '人' : '' }[k] || '');
+const sval = k => ({ 'go:sound': S.settings.bgm === false && S.settings.se === false ? 'オフ' : 'オン', 'go:pass': S.settings.passMode ? 'オン' : 'オフ', 'go:location': LOC_LABEL[S.settings.location], 'go:privacy': S.me.private ? '非公開' : '公開', 'go:blocked': S.blocked.length ? S.blocked.length + '人' : '' }[k] || '');
 const srow = (act, ic, label, sub = '', val = '') => `<button class="srow" data-act="${act}">${I[ic]}<span class="lbl">${label}${sub ? `<small>${sub}</small>` : ''}</span>${val ? `<span class="val">${val}</span>` : ''}${I.chev.replace('<svg', '<svg class="chev"')}</button>`;
 const trow = (on, act, label, sub = '') => `<div class="srow"><span class="lbl">${label}${sub ? `<small>${sub}</small>` : ''}</span><button class="sw" role="switch" aria-checked="${!!on}" aria-label="${esc(label)}" data-act="${act}"></button></div>`;
 function viewSettings(){
@@ -967,7 +1070,7 @@ function bindReorder(P){
     timer = setTimeout(() => { timer = null; el.classList.remove('pressing');
       drag = { el, id: el.dataset.wid, order: al.workIds.slice(), x0: px, y0: py, l0: parseFloat(el.style.left), t0: parseFloat(el.style.top), s0: wall.scrollLeft };
       el.classList.add('lift'); wall.classList.add('dragging'); try { el.setPointerCapture(e.pointerId); } catch(_){}
-      navigator.vibrate?.(15); suppress = true; raf = requestAnimationFrame(tick); }, 450);
+      navigator.vibrate?.(15); Sound.se('lift'); suppress = true; raf = requestAnimationFrame(tick); }, 450);
   });
   wall.addEventListener('pointermove', e => { px = e.clientX; py = e.clientY;
     if (!drag){ if (timer && Math.hypot(px - sx, py - sy) > 8) cancelPress(); return; }
@@ -975,6 +1078,7 @@ function bindReorder(P){
   wall.addEventListener('touchmove', e => { if (drag) e.preventDefault(); }, { passive:false });
   const end = () => { cancelPress(); if (!drag) return; cancelAnimationFrame(raf);
     const changed = drag.order.join() !== al.workIds.join(); al.workIds = drag.order; drag.el.classList.remove('lift'); wall.classList.remove('dragging'); drag = null;
+    Sound.se('drop'); Sound.muteFor(200);
     if (changed){ save(); toast('並び順を保存しました'); } renderPage(true); };
   wall.addEventListener('pointerup', end); wall.addEventListener('pointercancel', end);
   wall.addEventListener('click', e => { if (suppress){ e.stopPropagation(); e.preventDefault(); suppress = false; } }, true);
@@ -1026,6 +1130,10 @@ function pageSettings(P){
       <div class="sgroup"><h3>受け取るタグ</h3><p class="help" style="margin-top:0">選んだタグの作品だけを受け取ります。何も選ばなければすべて受け取ります。</p><div class="chips">${TAGS.map(t => `<button aria-pressed="${s.receiveTags.includes(t)}" data-rtag="${esc(t)}">#${esc(t)}</button>`).join('')}</div></div>
       <p class="help">Web版ではBluetoothのすれ違いが使えないため、ホームの「すれ違いを試す」で動きを確認できます。</p>`); }
   if (p === 'location') return shell('位置情報の記録', `<div class="sgroup"><h3>すれ違った場所をどこまで記録するか</h3>${[['precise','詳細な場所','施設名と座標を記録します'],['city','エリアまで','施設名と市区町村を記録します'],['off','記録しない','場所を残さず、作品だけを受け取ります']].map(([k,l,sub]) => `<button class="radio" role="radio" aria-checked="${s.location === k}" data-loc="${k}"><span class="lbl">${l}<small>${sub}</small></span><span class="o"></span></button>`).join('')}</div><p class="help">相手にあなたの位置情報は届きません。記録はあなたのコレクションの中だけに残ります。</p>`);
+  if (p === 'sound') return shell('サウンド', `${trow(s.bgm !== false, 'tBgm', 'BGM', '画面ごとにちがう音楽が流れます')}${trow(s.se !== false, 'tSe', '効果音', 'タップ・決定・キャンセル・作品へのズームインなどの音')}
+      <div class="sgroup"><h3>音量</h3><label class="sr" for="vol">音量</label><input type="range" id="vol" class="range" min="0" max="100" value="${Math.round((s.vol ?? .7) * 100)}"></div>
+      <div class="sgroup"><h3>BGMを試聴</h3>${[['settings','設定'],['home','ホーム'],['gacha','ガチャ'],['museum','マイ美術館・他人の作品']].map(([k, l]) => `<button class="radio" role="radio" aria-checked="${(UI.bgmPreview || 'settings') === k}" data-bgmprev="${k}"><span class="lbl">${l}</span><span class="o"></span></button>`).join('')}</div>
+      <p class="help">ブラウザの決まりで、最初に画面をタップしたときから音が鳴ります。スマホのマナーモードでは鳴らないことがあります。</p>`);
   if (p === 'notify') return shell('お知らせ', `${trow(s.notifyPass,'tNotifyPass','すれ違い','誰かとすれ違って作品が届いたとき')}${trow(s.notifyGacha,'tNotifyGacha','ガチャ','ガチャで作品が届いたとき')}`);
   if (p === 'privacy') return shell('アカウントのプライバシー', trow(S.me.private,'tPrivate','非公開アカウント','オンにすると、あなたの美術館はフォローを承認した人だけが見られます。すれ違いで届くサムネはこれまでどおり届きます。'));
   if (p === 'blocked') return shell('ブロック済み', S.blocked.length ? S.blocked.map(b => `<div class="srow"><img src="${artistAv(b)}" alt="" style="width:36px;height:36px;border-radius:50%"><span class="lbl">${esc(b.name)}<small>@${esc(b.handle)}</small></span><button class="editbtn" data-unblock="${esc(b.handle)}">ブロックを解除</button></div>`).join('') : '<div class="empty">ブロックしている人はいません。作品の「削除する」からブロックできます。</div>');
@@ -1061,8 +1169,17 @@ function render(){
   if (UI.tab === 'gacha') runGlobe(); else cancelAnimationFrame(globeRAF);
   renderPage();
 }
+// 画面ごとのBGM：ホーム／ガチャ／マイ美術館・他人の作品（美術館・作品の画面も）／設定
+function bgmName(){
+  const P = topPage();
+  if (P){ if (P.type === 'settings' && P.page === 'sound' && UI.bgmPreview) return UI.bgmPreview;
+    if (P.type === 'settings' && P.page !== 'notifs') return 'settings';
+    if (P.type === 'museum' || P.type === 'detail' || P.type === 'form') return 'museum'; }
+  return { home:'home', gacha:'gacha', me:'museum', settings:'settings' }[UI.tab];
+}
 function renderPage(keep){
   const P = topPage(); const host = $('#pages');
+  Sound.bgm(bgmName());
   if (!P){ host.innerHTML = ''; document.body.style.overflow = ''; return; }
   document.body.style.overflow = 'hidden';
   const prev = host.querySelector('.page')?.scrollTop, prevWall = $('#wall')?.scrollLeft;
@@ -1117,6 +1234,22 @@ function openWorkForm(w, albumId){
 // 相手の美術館を開く。まだ作品を選んでいないすれ違いがあれば、その出会いの分だけ1点もらえる
 const openArtist = (a, encId) => push({ type:'museum', kind:'artist', artist: a, view:'wall', encId: encId || openEncOf(a)?.id || null });
 
+// タップした場所に合わせて効果音を選ぶ（決定・キャンセル・作品へのズームイン・切り替えなど）
+function seFor(b, e){
+  const a = b.dataset.act;
+  if (a === 'crack') return null;   // 地球儀は crack() の中で鳴らす
+  if (b.tagName === 'BUTTON' && b.type === 'submit' && b.form) return 'confirm';   // フォームの「完了」「保存する」「作成」など
+  if (['draw','doPick','doDelete','doBlock','doReset','fxMuseum','fxColl','passAlbum'].includes(a)) return 'confirm';
+  if (['back','modalCancel','fxClose'].includes(a)) return 'cancel';
+  if (a === 'modalBg') return e.target === b ? 'cancel' : null;
+  if (a === 'mode') return 'whoosh';
+  if (b.dataset.pin || b.dataset.wi !== undefined || a === 'openC' || a === 'openEnc') return 'zoom';
+  if (b.dataset.ci !== undefined) return +b.dataset.ci === UI.carIndex ? 'zoom' : 'tap';
+  if (b.getAttribute('role') === 'switch') return 'toggle';
+  return 'tap';
+}
+document.addEventListener('pointerdown', () => Sound.unlock(), { capture:true });
+document.addEventListener('click', e => { Sound.unlock(); const b = e.target.closest('button, [data-act], label.formimg'); if (b) Sound.se(seFor(b, e)); }, true);
 document.addEventListener('click', e => {
   const b = e.target.closest('button, [data-act]'); if (!b) return; const d = b.dataset; const P = topPage();
   if (d.tab){ UI.pages = []; closeFx(); endGacha(); UI.tab = d.tab; render(); window.scrollTo(0,0); return; }
@@ -1130,6 +1263,7 @@ document.addEventListener('click', e => {
   if (d.wi !== undefined){ const x = P._works[+d.wi]; if (x.mine) openWorkForm(x.w); else push({ type:'detail', w: x.w, c: x.c || null, from: P.kind === 'artist' ? 'artist' : 'coll', enc: P.kind === 'artist' ? P._enc : null }); return; }
   if (d.ptab){ UI.ptab = d.ptab; render(); return; }
   if (d.pf){ UI.pfilter = d.pf; render(); return; }
+  if (d.bgmprev){ UI.bgmPreview = d.bgmprev; renderPage(true); return; }
   if (d.limit){ S.settings.dailyLimit = +d.limit; save(); renderPage(true); return; }
   if (d.loc){ S.settings.location = d.loc; save(); renderPage(true); return; }
   if (d.rtag){ const a = S.settings.receiveTags, i = a.indexOf(d.rtag); i >= 0 ? a.splice(i,1) : a.push(d.rtag); save(); renderPage(true); return; }
@@ -1166,6 +1300,7 @@ document.addEventListener('click', e => {
       e.pickedId = w.id; S.collection.push(c); P.c = c; save();
       $('#fx').innerHTML = revealHTML(w, `${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(placeLabel(e.place))}`,
         `<button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxColl">コレクションを見る</button>`, 'もらった作品');
+      Sound.se('sparkle', reduced ? 0 : 1.3);
       break; }
     case 'fxColl': closeFx(); UI.pages = []; UI.tab = 'me'; UI.ptab = 'others'; render(); window.scrollTo(0,0); break;
     case 'openC': { const c = S.collection.find(x => x.id === d.cid); if (c) push({ type:'detail', w: c.work, c, from:'coll' }); break; }
@@ -1192,11 +1327,13 @@ document.addEventListener('click', e => {
     case 'tPass': S.settings.passMode = !S.settings.passMode; save(); renderPage(true); break;
     case 'tNotifyPass': S.settings.notifyPass = !S.settings.notifyPass; save(); renderPage(true); break;
     case 'tNotifyGacha': S.settings.notifyGacha = !S.settings.notifyGacha; save(); renderPage(true); break;
+    case 'tBgm': S.settings.bgm = S.settings.bgm === false; Sound.applyVol(); save(); renderPage(true); break;
+    case 'tSe': S.settings.se = S.settings.se === false; Sound.applyVol(); save(); renderPage(true); break;
     case 'tPrivate': S.me.private = !S.me.private; save(); renderPage(true); break;
     case 'askReset': modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgR"><h2 id="dlgR">データを初期化</h2><p>受け取った作品・マイ美術館・設定をすべて消して、最初の状態に戻します。元に戻せません。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doReset">初期化</button></div></div>`); break;
     case 'doReset': closeFx(); S = seedState(); ensureAlbums(); save(); UI.pages = []; UI.tab = 'home'; UI.carIndex = 0; render(); toast('データを初期化しました'); break;
     default:
-      if (d.act?.startsWith('go:')) push({ type:'settings', page: d.act.slice(3) });
+      if (d.act?.startsWith('go:')){ if (d.act === 'go:sound') UI.bgmPreview = null; push({ type:'settings', page: d.act.slice(3) }); }
       else if (d.act?.startsWith('noop:')) toast('デモ版のため、この機能は準備中です');
   }
 });
@@ -1205,6 +1342,7 @@ document.addEventListener('click', e => { const map = e.target.closest('#map'); 
 
 document.addEventListener('input', e => {
   const id = e.target.id;
+  if (id === 'vol'){ S.settings.vol = e.target.value / 100; Sound.applyVol(); save(); return; }
   if (id === 'sq'){ UI.sq = e.target.value; const pos = e.target.selectionStart; render(); const i = $('#sq'); i.focus(); i.setSelectionRange(pos, pos); }
   if (id === 'ftitle') $('#tcnt').textContent = `${e.target.value.length}/30`;
   if (id === 'fcap') $('#ccnt').textContent = `${e.target.value.length}/500`;
