@@ -77,7 +77,7 @@ img{display:block}
 .frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));container-type:inline-size}
 .frame img.art{position:absolute;object-fit:cover;background:var(--bg3)}
 .frame svg.fr{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-/* サムネの目印：額縁の左上から下がる黄色いしおりに、濃い茶色の文字で「サムネ」 */
+/* サムネの目印（相手の美術館の中だけで表示）：額縁の左上から下がる黄色いしおりに、濃い茶色の文字で「サムネ」 */
 .ribbon{position:absolute;z-index:2;padding:.4em .5em 1em;font-size:9px;font-size:clamp(6px,5.2cqw,12px);font-weight:800;line-height:1;letter-spacing:.04em;white-space:nowrap;color:#5A3D00;background:linear-gradient(90deg,#F5B01E,#FFC93F 45%,#F5B01E);clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - .6em),0 100%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 
 /* ---------- carousel ---------- */
@@ -586,7 +586,7 @@ function viewHome(){
     <div class="hright"><button class="iconbtn" data-act="notifs" aria-label="お知らせ">${I.bell}${unread ? '<span class="dot"></span>' : ''}</button>
       <button class="mode" role="switch" aria-checked="${map}" aria-label="地図で見る" data-act="mode"><span class="knob">${map ? I.mappin : I.phone}</span></button></div></div>`;
   if (map) return `<div class="app wrap pad-nav">${head}${mapHTML()}</div>`;
-  const body = list.length ? `<div class="car" id="car">${list.map((c, i) => `<button class="car-item" data-ci="${i}" aria-label="${esc(c.work.artist.name)}さんのサムネ「${esc(c.work.title)}」／美術館へ">${frame(c.work, { ribbon:true })}</button>`).join('')}</div>
+  const body = list.length ? `<div class="car" id="car">${list.map((c, i) => `<button class="car-item" data-ci="${i}" aria-label="${esc(c.work.artist.name)}さんのサムネ「${esc(c.work.title)}」／美術館へ">${frame(c.work)}</button>`).join('')}</div>
       <div id="carInfo">${infoCard(list[UI.carIndex], { enc:true })}</div>`
     : `<div class="car-empty">まだ誰ともすれ違っていません。<br>すれ違い通信をオンにして出かけてみましょう。</div>`;
   return `<div class="app wrap pad-nav">${head}${body}
@@ -616,7 +616,7 @@ function mapHTML(){
   const sel = UI.selPin && encs().find(c => c.id === UI.selPin);
   return `<div class="map ${sel ? 'zoomed' : ''}" id="map">
     <div class="world" id="world"><img src="${mapImage()}" alt="" draggable="false"></div>
-    <div id="pins">${pinsData().map(p => `<button class="pin ${p.c.id === UI.selPin ? 'sel' : ''}" data-pin="${p.c.id}" data-x="${p.x}" data-y="${p.y}" aria-label="${esc(p.c.work.title)}（${esc(p.c.place.name)}）">${frame(p.c.work, { ribbon:true })}<span class="pdot"></span></button>`).join('')}</div>
+    <div id="pins">${pinsData().map(p => `<button class="pin ${p.c.id === UI.selPin ? 'sel' : ''}" data-pin="${p.c.id}" data-x="${p.x}" data-y="${p.y}" aria-label="${esc(p.c.work.title)}（${esc(p.c.place.name)}）">${frame(p.c.work)}<span class="pdot"></span></button>`).join('')}</div>
     <div class="hint">作品をタップすると近づきます</div>
     <div class="mcard">${sel ? infoCard(sel, { enc:true }) : ''}</div></div>`;
 }
@@ -799,18 +799,18 @@ function showResult(){
 function endGacha(){ UI.gPhase = null; UI.pending = null; }
 
 /* ================= MY PAGE ================= */
-function collage(works, thumbId){
+function collage(works){
   const w3 = works.slice(0, 3); if (!w3.length) return '<div class="empty" style="padding:30px">まだ作品がありません</div>';
   const pos = [{l:'4%', w:'31%', z:1}, {l:'33%', w:'36%', z:3}, {l:'64%', w:'31%', z:2}];
   const order = w3.length === 1 ? [1] : w3.length === 2 ? [0,1] : [0,1,2];
-  return `<div class="collage">${w3.map((w, i) => { const p = pos[order[i]]; return `<div class="c" style="left:${p.l};width:${p.w};z-index:${p.z}">${frame(w, { ribbon: !!thumbId && w.id === thumbId })}</div>`; }).join('')}</div>`;
+  return `<div class="collage">${w3.map((w, i) => { const p = pos[order[i]]; return `<div class="c" style="left:${p.l};width:${p.w};z-index:${p.z}">${frame(w)}</div>`; }).join('')}</div>`;
 }
 function viewMe(){
   const all = coll(); const f = UI.pfilter; const filtered = f === 'all' ? all : all.filter(c => c.work.tags.includes(f));
   const usedTags = [...new Set(all.flatMap(c => c.work.tags))];
   let body;
   if (UI.ptab === 'mine'){
-    body = `<button class="album" data-act="openMine"><div class="ah"><span>${I.heart}マイ美術館</span><span>${I.pics}${S.myWorks.length}</span></div>${collage(S.myWorks, S.thumbId)}</button>`;
+    body = `<button class="album" data-act="openMine"><div class="ah"><span>${I.heart}マイ美術館</span><span>${I.pics}${S.myWorks.length}</span></div>${collage(S.myWorks)}</button>`;
   } else {
     const pass = filtered.filter(c => c.source === 'pass'), gacha = filtered.filter(c => c.source === 'gacha');
     const groups = {}; pass.forEach(c => { (groups[c.place.name] ||= { place:c.place, n:0 }).n++; });
@@ -877,7 +877,7 @@ function pageMuseum(P){
   const right = `<button class="iconbtn r" data-act="wallView" aria-label="${grid ? '壁に並べて表示' : '一覧で表示'}">${grid ? I.wall : I.grid}</button>`;
   if (!works.length) return shell(title, `${ownerHTML}<div class="empty">まだ作品がありません。${P.kind === 'mine' ? '<button class="pbtn red" data-act="newWork">作品を追加</button>' : ''}</div>`, right);
   const badge = x => P.kind === 'artist' && x.c ? '<span class="wbadge got">もらった</span>' : '';
-  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}${x.c ? '（もらった作品）' : ''}">${frame(x.w, { ribbon: x.mine ? x.w.id === S.thumbId : !!x.thumb })}${badge(x)}</button>`;
+  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}${x.c ? '（もらった作品）' : ''}">${frame(x.w, { ribbon: P.kind === 'artist' && !!x.thumb })}${badge(x)}</button>`;
   let body;
   if (grid) body = `<div class="mgrid">${works.map((x, i) => item(x, i, 'position:relative')).join('')}</div>`;
   else {
@@ -887,7 +887,7 @@ function pageMuseum(P){
     const total = Math.max(xt, xb) + 10;
     body = `<div class="wall" id="wall" style="height:${H}px"><div class="inner" style="width:${total}px">${works.map((o, i) => item(o, i, `left:${pos[i].left}px;top:${pos[i].top}px;width:${pos[i].w}px`)).join('')}</div></div><div class="prog"><i id="progBar"></i></div>`;
   }
-  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">黄色いリボンは「すれ違い通信のサムネ」に設定中の作品です。作品をタップすると編集できます。</p>' : `<p class="help">${hint}</p>`}`, right);
+  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">作品をタップすると編集できます。サムネは作品の編集画面で設定できます。</p>' : `<p class="help">${hint}</p>`}`, right);
 }
 function pageDetail(P){
   const { w, c } = P; const loc = S.settings.location;
