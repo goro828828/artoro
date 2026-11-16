@@ -101,6 +101,17 @@ img{display:block}
 .linkbtn{font-size:12px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:16px;background:var(--bg2)}
 .linkbtn svg{width:15px;height:15px}
 .linkbtn:disabled{opacity:.5}
+/* すれ違い：美術館で1点もらう */
+.pickst{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--blue);background:#E8F2FE;border-radius:10px;padding:6px 10px}
+.pickst svg{width:15px;height:15px;flex:none}
+.pickst .chev{margin-left:auto}
+.pickst.done{color:#5E7A00;background:#F1F8D6}
+.pickbar{display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border-radius:12px;background:#E8F2FE;color:#1F5FAE;font-size:12px}
+.pickbar svg{width:20px;height:20px;flex:none}
+.pickbar b{display:block;font-size:13px;color:var(--ink)}
+.pickbar.done{background:#F1F8D6;color:#5E7A00}
+.wbadge{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);z-index:3;font-size:10px;font-weight:800;padding:2px 9px;border-radius:9px;background:var(--ink);color:#fff;white-space:nowrap}
+.wbadge.got{background:var(--lime);color:#2C3A00}
 
 /* ---------- map ---------- */
 .map{position:relative;margin-top:14px;height:calc(100svh - 230px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:360px;max-height:640px;border-radius:22px;overflow:hidden;background:#EEF0F2;touch-action:none;user-select:none}
@@ -383,6 +394,7 @@ const I = {
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></svg>',
   key:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16.5 6.5l2 2M14.5 8.5l1.5 1.5"/></svg>',
   logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h8M10 12h10.5M17 8.5l3.5 3.5-3.5 3.5"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   coin:'<svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="url(#coinG)"/><circle cx="12" cy="12" r="8.6" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/><path d="M15.8 6.2c.6-.5 1.5.3 1 .9l-4.6 5.6-1.3-1.1zM10.3 12.2l1.4 1.2c-.4 1.7-1.7 3-4 3.3.9-.9.7-2.4 1.2-3.3.3-.6.8-1 1.4-1.2z" fill="#fff"/></svg>',
 };
 
@@ -490,7 +502,7 @@ function museumOf(artist){
 }
 
 /* ================= state ================= */
-const KEY = 'artoro.v2';
+const KEY = 'artoro.v3';   // v3：すれ違いは「出会い」として記録し、作品は美術館で1点選んでもらう
 const COIN_DAILY = 100;   // 1日に配られる作品コインの枚数
 const GACHA_CATS = [
   { label:'ランダム', color:'#FFC234', tags:null, props:['envelope','kraft','letter'] },
@@ -501,11 +513,14 @@ const GACHA_CATS = [
   { label:'写真', color:'#F06BA8', tags:['写真','風景'], props:['camera','film'] },
 ];
 function seedState(){
-  const r = rng(2026), now = Date.now(), collection = [];
-  const plan = [[0,.15],[9,.6],[2,1.4],[3,3],[7,5],[null,7],[1,30],[null,32],[4,52],[8,80],[null,100],[5,150],[6,220]];
-  plan.forEach(([pi, hrs], i) => {
-    const artist = ARTISTS[i % ARTISTS.length]; const w = museumOf(artist)[0];
-    collection.push({ id: uid(), source: pi === null ? 'gacha' : 'pass', place: pi === null ? null : PLACES[pi], at: now - hrs*3600e3, work: w });
+  // すれ違い＝相手のサムネが届く「出会い」。作品は相手の美術館で1点選んでもらう。ガチャはサムネの作品がそのまま届く。
+  const now = Date.now(), collection = [], encounters = [];
+  const plan = [[0,.15],[9,.6],[2,1.4,true],[3,3],[7,5],[null,7],[1,30,true],[null,32],[4,52,true],[8,80,true],[null,100],[5,150,true],[6,220,true]];
+  plan.forEach(([pi, hrs, picked], i) => {
+    const artist = ARTISTS[i % ARTISTS.length], m = museumOf(artist), at = now - hrs*3600e3;
+    if (pi === null){ collection.push({ id: uid(), source:'gacha', place:null, at, work: m[0] }); return; }
+    const e = { id: uid(), source:'pass', place: PLACES[pi], at, work: m[0], pickedId: null }; encounters.push(e);
+    if (picked){ const w = m[1 + (i % (m.length - 1))]; e.pickedId = w.id; collection.push({ id: uid(), source:'pass', place: e.place, at, work: w, encId: e.id }); }
   });
   return {
     me: { name:'ME', handle:'me_artoro', bio:'イラストと版画をつくっています。', avatarSeed: 99, private:false },
@@ -514,7 +529,7 @@ function seedState(){
       { id: uid(), title:'ふたり', desc:'友だちと撮った写真をもとに描きました。', tags:['イラスト','オリジナル'], seed: 9123, style: 0, aspect:[4,3], at: now - 86400e3*20 },
       { id: uid(), title:'くり返し', desc:'版画の試し刷り。', tags:['版画'], seed: 3141, style: 1, aspect:[4,5], at: now - 86400e3*40 },
     ],
-    thumbId: null, collection, following: [], blocked: [], notifications: [],
+    thumbId: null, collection, encounters, following: [], blocked: [], notifications: [],
     passLog: { date: todayKey(), count: 5 },
     coins: { date: todayKey(), n: COIN_DAILY },
     settings: { passMode:true, dailyLimit:20, receiveTags:[], location:'city', notifyPass:true, notifyGacha:true },
@@ -531,10 +546,14 @@ if (S.coinDaily !== COIN_DAILY){ S.coins = { date: todayKey(), n: COIN_DAILY }; 
 const UI = { tab:'home', homeMode:'pass', carIndex:0, ptab:'mine', pfilter:'all', cat:0, pages:[], selPin:null, sq:'' };
 const isBlocked = h => S.blocked.some(b => b.handle === h);
 const coll = () => S.collection.filter(c => !isBlocked(c.work.artist.handle)).sort((a,b) => b.at - a.at);
+const encs = () => (S.encounters || []).filter(e => !isBlocked(e.work.artist.handle)).sort((a,b) => b.at - a.at);
+const pickedWorkOf = e => e.pickedId ? museumOf(e.work.artist).find(w => w.id === e.pickedId) || S.collection.find(c => c.encId === e.id)?.work : null;
+const openEncOf = a => encs().find(e => e.work.artist.handle === a.handle && !e.pickedId);
+const placeLabel = p => S.settings.location === 'off' ? 'すれ違い' : p.name;
 const thumbWork = () => S.myWorks.find(w => w.id === S.thumbId);
 const meAv = () => art(S.me.avatarSeed, 0, [1,1], 140);
 const artistAv = a => art(hash(a.handle), 0, [1,1], 120);
-function homeItems(){ const t = todayKey(); const passes = coll().filter(c => c.source === 'pass'); const today = passes.filter(c => todayKey(new Date(c.at)) === t); return { list: today.length ? today : passes.slice(0, 8), today: !!today.length }; }
+function homeItems(){ const t = todayKey(); const passes = encs(); const today = passes.filter(c => todayKey(new Date(c.at)) === t); return { list: today.length ? today : passes.slice(0, 8), today: !!today.length }; }
 
 /* ================= shared pieces ================= */
 function navHTML(){
@@ -548,7 +567,13 @@ function infoCard(c, opts = {}){
     <div class="ttl">${esc(w.title)}</div>
     <p class="cap ${opts.full ? 'full' : ''}">${esc(w.desc)}</p>
     <div class="tags">${w.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>
-    <div class="meta">${placeBit}<span>${jdate(c.at || w.at)}</span>${w.artist ? `<span>@${esc(w.artist.handle)}</span>` : ''}</div></div>`;
+    <div class="meta">${placeBit}<span>${jdate(c.at || w.at)}</span>${w.artist ? `<span>@${esc(w.artist.handle)}</span>` : ''}</div>${opts.enc ? encStatus(c) : ''}</div>`;
+}
+// すれ違った相手のサムネの下に出す「もらえる／もらった」表示
+function encStatus(e){
+  const pw = pickedWorkOf(e);
+  return pw ? `<div class="pickst done">${I.check}「${esc(pw.title)}」をもらいました</div>`
+            : `<div class="pickst">${I.museum}美術館から好きな作品を1点もらえます${I.chev.replace('<svg', '<svg class="chev"')}</div>`;
 }
 
 /* ================= HOME ================= */
@@ -560,8 +585,8 @@ function viewHome(){
     <div class="hright"><button class="iconbtn" data-act="notifs" aria-label="お知らせ">${I.bell}${unread ? '<span class="dot"></span>' : ''}</button>
       <button class="mode" role="switch" aria-checked="${map}" aria-label="地図で見る" data-act="mode"><span class="knob">${map ? I.mappin : I.phone}</span></button></div></div>`;
   if (map) return `<div class="app wrap pad-nav">${head}${mapHTML()}</div>`;
-  const body = list.length ? `<div class="car" id="car">${list.map((c, i) => `<button class="car-item" data-ci="${i}" aria-label="${esc(c.work.title)}／${esc(c.work.artist.name)}の美術館へ">${frame(c.work)}</button>`).join('')}</div>
-      <div id="carInfo">${infoCard(list[UI.carIndex])}</div>`
+  const body = list.length ? `<div class="car" id="car">${list.map((c, i) => `<button class="car-item" data-ci="${i}" aria-label="${esc(c.work.artist.name)}さんのサムネ「${esc(c.work.title)}」／美術館へ">${frame(c.work)}</button>`).join('')}</div>
+      <div id="carInfo">${infoCard(list[UI.carIndex], { enc:true })}</div>`
     : `<div class="car-empty">まだ誰ともすれ違っていません。<br>すれ違い通信をオンにして出かけてみましょう。</div>`;
   return `<div class="app wrap pad-nav">${head}${body}
     <div class="demo"><button class="linkbtn" data-act="simulate" ${S.settings.passMode ? '' : 'disabled'}>${I.pass}${S.settings.passMode ? 'すれ違いを試す（デモ）' : 'すれ違い通信はオフです（設定で変更）'}</button></div></div>`;
@@ -584,15 +609,15 @@ function mapImage(){
   mapImg = c.toDataURL('image/jpeg', .85); return mapImg;
 }
 const MAPV = { s:.6, x:0, y:0 };
-function pinsData(){ return coll().filter(c => c.source === 'pass').slice(0, 12).map((c, i) => { const r = rng(hash(c.id)); const col = (i + Math.floor(i/3)) % 3, row = Math.floor(i/3);
+function pinsData(){ return encs().slice(0, 12).map((c, i) => { const r = rng(hash(c.id)); const col = (i + Math.floor(i/3)) % 3, row = Math.floor(i/3);
   return { c, x: 170 + col*280 + (r() - .5)*90, y: 250 + row*230 + (r() - .5)*70 }; }); }
 function mapHTML(){
-  const sel = UI.selPin && coll().find(c => c.id === UI.selPin);
+  const sel = UI.selPin && encs().find(c => c.id === UI.selPin);
   return `<div class="map ${sel ? 'zoomed' : ''}" id="map">
     <div class="world" id="world"><img src="${mapImage()}" alt="" draggable="false"></div>
     <div id="pins">${pinsData().map(p => `<button class="pin ${p.c.id === UI.selPin ? 'sel' : ''}" data-pin="${p.c.id}" data-x="${p.x}" data-y="${p.y}" aria-label="${esc(p.c.work.title)}（${esc(p.c.place.name)}）">${frame(p.c.work)}<span class="pdot"></span></button>`).join('')}</div>
     <div class="hint">作品をタップすると近づきます</div>
-    <div class="mcard">${sel ? infoCard(sel) : ''}</div></div>`;
+    <div class="mcard">${sel ? infoCard(sel, { enc:true }) : ''}</div></div>`;
 }
 function layoutMap(animate){
   const map = $('#map'); if (!map) return;
@@ -629,7 +654,7 @@ function bindCarousel(){
     const mid = car.scrollLeft + car.clientWidth / 2; let best = 0, bd = 1e9;
     items.forEach((it, i) => { const c = it.offsetLeft + it.offsetWidth / 2, d = (c - mid) / it.offsetWidth; const ad = Math.min(1, Math.abs(d));
       it.style.transform = `scale(${1 - ad * .26})`; if (Math.abs(d) < bd){ bd = Math.abs(d); best = i; } });
-    if (best !== UI.carIndex){ UI.carIndex = best; $('#carInfo').innerHTML = infoCard(list[best]); $('#todayLbl').innerHTML = `${today ? '今日の作品' : '最近の作品'} <b>${best + 1} / ${list.length}</b>`; }
+    if (best !== UI.carIndex){ UI.carIndex = best; $('#carInfo').innerHTML = infoCard(list[best], { enc:true }); $('#todayLbl').innerHTML = `${today ? '今日の作品' : '最近の作品'} <b>${best + 1} / ${list.length}</b>`; }
   };
   const it = items[UI.carIndex]; if (it) car.scrollLeft = it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2;
   update(); let raf; car.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive:true });
@@ -754,15 +779,20 @@ function riseScale(w){
   const h = 150 * (400 * w.aspect[1] / w.aspect[0] + 20) / 400;   // 幅150pxの額縁の高さ
   return `--s0:${Math.min(.6, 118 / h).toFixed(3)};--s1:${Math.min(1.2, 190 / h).toFixed(3)}`;
 }
-function showResult(){
-  const p = UI.pending; if (!p) return; const { c, cat } = p, w = c.work;
-  $('#fx').innerHTML = `<div class="draw" role="dialog" aria-modal="true" aria-label="ガチャの結果">
+// 封筒から額縁の作品が出てくる演出（ガチャの結果と、すれ違いで作品をもらった時に使う）
+function revealHTML(w, sub, btns, label){
+  return `<div class="draw" role="dialog" aria-modal="true" aria-label="${label}">
     <div class="rays"></div>
     <div class="col">
       <div class="env"><div class="back2"></div><div class="card" style="${riseScale(w)}">${frame(w)}</div><div class="body"></div><div class="flap"></div><div class="seal"></div></div>
-      <div class="txt"><small>NEW ARTWORK</small><b>${esc(w.title)}</b><span>${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(cat.label)}</span></div>
-      <div class="btns"><button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxMuseum" data-cid="${c.id}">美術館を見る</button></div>
+      <div class="txt"><small>NEW ARTWORK</small><b>${esc(w.title)}</b><span>${sub}</span></div>
+      <div class="btns">${btns}</div>
     </div></div>`;
+}
+function showResult(){
+  const p = UI.pending; if (!p) return; const { c, cat } = p, w = c.work;
+  $('#fx').innerHTML = revealHTML(w, `${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(cat.label)}`,
+    `<button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxMuseum" data-cid="${c.id}">美術館を見る</button>`, 'ガチャの結果');
   $('#stage')?.classList.remove('spin');
 }
 function endGacha(){ UI.gPhase = null; UI.pending = null; }
@@ -784,7 +814,7 @@ function viewMe(){
     const pass = filtered.filter(c => c.source === 'pass'), gacha = filtered.filter(c => c.source === 'gacha');
     const groups = {}; pass.forEach(c => { (groups[c.place.name] ||= { place:c.place, n:0 }).n++; });
     body = `<div class="filt" role="group" aria-label="タグで絞り込み"><button aria-pressed="${f === 'all'}" data-pf="all">All</button>${usedTags.map(t => `<button aria-pressed="${f === t}" data-pf="${esc(t)}">${esc(t)}</button>`).join('')}</div>
-      ${pass.length ? `<button class="album" data-act="openColl" data-src="pass"><div class="ah"><span>${I.pin}すれ違いで出会った作品</span><span>${I.pics}${pass.length}</span></div>${collage(pass.map(c => c.work))}</button>` : ''}
+      ${pass.length ? `<button class="album" data-act="openColl" data-src="pass"><div class="ah"><span>${I.pin}すれ違いでもらった作品</span><span>${I.pics}${pass.length}</span></div>${collage(pass.map(c => c.work))}</button>` : ''}
       ${gacha.length ? `<button class="album" data-act="openColl" data-src="gacha"><div class="ah"><span>${I.gacha}ガチャで届いた作品</span><span>${I.pics}${gacha.length}</span></div>${collage(gacha.map(c => c.work))}</button>` : ''}
       ${!pass.length && !gacha.length ? '<div class="empty">この条件の作品はまだありません。</div>' : ''}
       ${Object.keys(groups).length && S.settings.location !== 'off' ? `<div class="places"><h3>出会った場所</h3>${Object.values(groups).sort((a,b) => b.n - a.n).map(g => `<button class="prow" data-act="openPlace" data-place="${esc(g.place.name)}">${I.pin}<div><b>${esc(g.place.name)}</b><span>${esc(g.place.city)}${S.settings.location === 'precise' ? `・${g.place.lat.toFixed(4)}, ${g.place.lng.toFixed(4)}` : ''}</span></div><em>${g.n}</em></button>`).join('')}</div>` : ''}`;
@@ -826,12 +856,18 @@ const shell = (title, body, right = '<span></span>') => `<div class="page"><div 
 
 function pageMuseum(P){
   let works, title, ownerHTML = '';
+  let pickHTML = '', hint = '作品をタップすると詳しく見られます。';
   if (P.kind === 'artist'){ const a = P.artist; const owned = coll().filter(c => c.work.artist.handle === a.handle);
-    works = museumOf(a).map(w => ({ w, c: owned.find(o => o.work.id === w.id) }));
+    works = museumOf(a).map((w, i) => ({ w, c: owned.find(o => o.work.id === w.id), thumb: i === 0 }));
+    const enc = P.encId && S.encounters.find(e => e.id === P.encId); P._enc = enc || null;
+    if (enc){ const pw = pickedWorkOf(enc), where = S.settings.location === 'off' ? 'すれ違いました' : `${esc(enc.place.name)}ですれ違いました`;
+      pickHTML = pw ? `<div class="pickbar done">${I.check}<div><b>「${esc(pw.title)}」をもらいました</b>${where}</div></div>`
+                    : `<div class="pickbar">${I.pin}<div><b>${where}</b>好きな作品をひとつ選んでもらえます（サムネ以外もOK）</div></div>`;
+      if (!pw) hint = '作品をタップして、もらう作品を選んでください。'; }
     owned.filter(o => !works.some(x => x.c === o)).forEach(o => works.unshift({ w:o.work, c:o }));
     title = `${a.name}の美術館`;
     ownerHTML = `<div class="wall-owner"><img src="${artistAv(a)}" alt=""><div><b>${esc(a.name)}</b><span>@${esc(a.handle)}・${works.length}作品</span></div>
-      <button class="editbtn" style="margin-left:auto" data-act="follow" data-h="${esc(a.handle)}">${S.following.includes(a.handle) ? 'フォロー中' : 'フォロー'}</button></div>`;
+      <button class="editbtn" style="margin-left:auto" data-act="follow" data-h="${esc(a.handle)}">${S.following.includes(a.handle) ? 'フォロー中' : 'フォロー'}</button></div>${pickHTML}`;
   } else if (P.kind === 'mine'){ works = S.myWorks.map(w => ({ w, mine:true })); title = 'マイ美術館'; }
   else if (P.kind === 'place'){ works = coll().filter(c => c.source === 'pass' && c.place.name === P.place).map(c => ({ w:c.work, c })); title = P.place; }
   else { works = coll().filter(c => c.source === P.src && (UI.pfilter === 'all' || c.work.tags.includes(UI.pfilter))).map(c => ({ w:c.work, c })); title = '他人の作品'; }
@@ -839,9 +875,10 @@ function pageMuseum(P){
   const grid = P.view === 'grid';
   const right = `<button class="iconbtn r" data-act="wallView" aria-label="${grid ? '壁に並べて表示' : '一覧で表示'}">${grid ? I.wall : I.grid}</button>`;
   if (!works.length) return shell(title, `${ownerHTML}<div class="empty">まだ作品がありません。${P.kind === 'mine' ? '<button class="pbtn red" data-act="newWork">作品を追加</button>' : ''}</div>`, right);
-  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}">${frame(x.w, { ribbon: x.mine && x.w.id === S.thumbId })}</button>`;
+  const badge = x => P.kind !== 'artist' ? '' : x.c ? '<span class="wbadge got">もらった</span>' : x.thumb ? '<span class="wbadge">サムネ</span>' : '';
+  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}${x.c ? '（もらった作品）' : ''}">${frame(x.w, { ribbon: x.mine && x.w.id === S.thumbId })}${badge(x)}</button>`;
   let body;
-  if (grid) body = `<div class="mgrid">${works.map((x, i) => item(x, i, 'position:static')).join('')}</div>`;
+  if (grid) body = `<div class="mgrid">${works.map((x, i) => item(x, i, 'position:relative')).join('')}</div>`;
   else {
     const H = Math.min(Math.min(window.innerWidth, 480) * 1.15, 500), rowH = H * .4; let xt = 22, xb = 22 + H * .2;
     const pos = works.map((o, i) => { const ar = o.w.aspect[0] / o.w.aspect[1]; const w = Math.min(rowH * ar, H * .62); const row = i % 2;
@@ -849,21 +886,24 @@ function pageMuseum(P){
     const total = Math.max(xt, xb) + 10;
     body = `<div class="wall" id="wall" style="height:${H}px"><div class="inner" style="width:${total}px">${works.map((o, i) => item(o, i, `left:${pos[i].left}px;top:${pos[i].top}px;width:${pos[i].w}px`)).join('')}</div></div><div class="prog"><i id="progBar"></i></div>`;
   }
-  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">黄色いリボンは「すれ違い通信のサムネ」に設定中の作品です。作品をタップすると編集できます。</p>' : '<p class="help">作品をタップすると詳しく見られます。</p>'}`, right);
+  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">黄色いリボンは「すれ違い通信のサムネ」に設定中の作品です。作品をタップすると編集できます。</p>' : `<p class="help">${hint}</p>`}`, right);
 }
 function pageDetail(P){
   const { w, c } = P; const loc = S.settings.location;
+  const canPick = !c && P.enc && !P.enc.pickedId && P.enc.work.artist.handle === w.artist.handle;
   const place = c ? (c.source === 'pass'
       ? `<div class="place pass">${I.pin}<b>${loc === 'off' ? 'すれ違いで受け取り' : esc(c.place.name)}</b><span>${loc === 'off' ? `場所は記録しない設定です・${jdate(c.at)}` : `${esc(c.place.city)}${loc === 'precise' ? `・${c.place.lat.toFixed(4)}, ${c.place.lng.toFixed(4)}` : ''}・${jdate(c.at)}にすれ違い`}</span></div>`
       : `<div class="place gacha">${I.gacha}<b>ガチャで受け取り</b><span>場所の記録なし・${jdate(c.at)}</span></div>`)
-    : `<div class="place">${I.museum}<b>まだ受け取っていない作品</b><span>${esc(w.artist.name)}さんとすれ違ったとき、この作品がサムネなら届きます</span></div>`;
+    : canPick ? `<div class="place pass">${I.pin}<b>${S.settings.location === 'off' ? 'すれ違った人の作品' : esc(P.enc.place.name) + 'ですれ違った人の作品'}</b><span>すれ違い1回につき1点、好きな作品をもらえます</span></div>`
+    : P.enc && P.enc.pickedId ? `<div class="place">${I.museum}<b>この人からは「${esc(pickedWorkOf(P.enc)?.title || '')}」をもらいました</b><span>またすれ違うと、もう1点もらえます</span></div>`
+    : `<div class="place">${I.museum}<b>まだもらっていない作品</b><span>${esc(w.artist.name)}さんとすれ違うと、美術館から好きな作品を1点もらえます</span></div>`;
   return shell(w.artist.name, `<div class="drow">
       <div class="dimg"><img src="${src(w)}" alt="${esc(w.title)}"></div>
       ${infoCard(c || w, { full:true })}
       ${place}
       ${P.from !== 'artist' ? `<button class="byline" data-act="toArtist"><img src="${artistAv(w.artist)}" alt=""><div><b>${esc(w.artist.name)}</b><br><span>@${esc(w.artist.handle)}の美術館を見る</span></div>${I.chev}</button>` : ''}
     </div>
-    <div class="pillbtns"><button class="pbtn" data-act="back">戻る</button>${c ? `<button class="pbtn red" data-act="askDelete">削除する</button>` : ''}</div>`);
+    <div class="pillbtns"><button class="pbtn" data-act="back">戻る</button>${c ? `<button class="pbtn red" data-act="askDelete">削除する</button>` : canPick ? `<button class="pbtn blue" data-act="askPick">この作品をもらう</button>` : ''}</div>`);
 }
 function pageForm(P){
   const d = P.draft;
@@ -897,15 +937,16 @@ function pageSettings(P){
   if (p === 'privacy') return shell('アカウントのプライバシー', trow(S.me.private,'tPrivate','非公開アカウント','オンにすると、あなたの美術館はフォローを承認した人だけが見られます。すれ違いで届くサムネはこれまでどおり届きます。'));
   if (p === 'blocked') return shell('ブロック済み', S.blocked.length ? S.blocked.map(b => `<div class="srow"><img src="${artistAv(b)}" alt="" style="width:36px;height:36px;border-radius:50%"><span class="lbl">${esc(b.name)}<small>@${esc(b.handle)}</small></span><button class="editbtn" data-unblock="${esc(b.handle)}">ブロックを解除</button></div>`).join('') : '<div class="empty">ブロックしている人はいません。作品の「削除する」からブロックできます。</div>');
   if (p === 'data'){ const bytes = (() => { try { return (localStorage.getItem(KEY) || '').length; } catch(e){ return 0; } })();
-    return shell('データとストレージ', `<dl class="kv"><dt>受け取った作品</dt><dd>${S.collection.length}点</dd><dt>マイ美術館</dt><dd>${S.myWorks.length}点</dd><dt>保存サイズ</dt><dd>${(bytes/1024).toFixed(1)} KB</dd></dl>
+    return shell('データとストレージ', `<dl class="kv"><dt>すれ違った人</dt><dd>${(S.encounters || []).length}人</dd><dt>受け取った作品</dt><dd>${S.collection.length}点</dd><dt>マイ美術館</dt><dd>${S.myWorks.length}点</dd><dt>保存サイズ</dt><dd>${(bytes/1024).toFixed(1)} KB</dd></dl>
       <div class="pillbtns" style="padding-top:6px"><button class="pbtn red" data-act="askReset">データを初期化</button></div><p class="help" style="text-align:center">デモ版のデータは、このブラウザの中だけに保存されています。</p>`); }
-  if (p === 'help') return shell('ヘルプ', `<div class="sgroup"><h3>すれ違い通信とは？</h3><p style="margin:0">ARTOROを開いた人どうしが近くを通ると、おたがいが「サムネ」に設定した作品が自動で届きます。フォロワー数やおすすめ表示に左右されずに、出会った人へ作品が届きます。</p></div>
+  if (p === 'help') return shell('ヘルプ', `<div class="sgroup"><h3>すれ違い通信とは？</h3><p style="margin:0">ARTOROを開いた人どうしが近くを通ると、おたがいの「サムネ」がホームに届きます。サムネをタップすると相手の美術館に入れて、好きな作品をひとつもらえます（すれ違い1回につき1点）。フォロワー数やおすすめ表示に左右されずに、出会った人と作品を交換できます。</p></div>
       <div class="sgroup"><h3>ホームの地図</h3><p style="margin:0">右上のスイッチで、作品を出会った場所の地図に切り替えられます。作品をタップすると近づき、もう一度タップすると相手の美術館へ移ります。</p></div>
-      <div class="sgroup"><h3>ガチャと作品コイン</h3><p style="margin:0">近くにユーザーがいなくても作品と出会えるように、毎日100枚の作品コインが配られます。1枚で1回ガチャを回せます。ジャンルは地球儀を左右にスワイプして選べます。</p></div>`);
+      <div class="sgroup"><h3>ガチャと作品コイン</h3><p style="margin:0">近くにユーザーがいなくても作品と出会えるように、毎日100枚の作品コインが配られます。1枚で1回ガチャを回すと、だれかのサムネの作品がそのまま届きます。ジャンルは地球儀を左右にスワイプして選べます。</p></div>`);
   if (p === 'about') return shell('ARTOROについて', `<div class="brand-big">ARTORO</div><p style="text-align:center;color:var(--muted);margin:2px 0 18px">アートロ｜すれ違いで作品を交換するアプリ</p>
       <p>SNSでは、アルゴリズムのせいで作品が多くの人に届きにくいことがあります。ARTOROは、アルゴリズムにたよらず、すれ違った人どうしで作品を送り、受け取れる場所をつくるために生まれました。</p><dl class="kv"><dt>バージョン</dt><dd>0.2.0（Web デモ）</dd></dl>`);
   if (p === 'notifs'){ const n = S.notifications.slice().reverse();
-    return shell('お知らせ', n.length ? n.map(x => { const c = S.collection.find(y => y.id === x.cid); return `<button class="nrow" ${c ? `data-act="openC" data-cid="${c.id}"` : ''}>${c ? `<img src="${src(c.work)}" alt="">` : ''}<div>${esc(x.text)}<span>${ago(x.at)}</span></div></button>`; }).join('') : '<div class="empty">新しいお知らせはありません。</div>'); }
+    return shell('お知らせ', n.length ? n.map(x => { const c = S.collection.find(y => y.id === x.cid), e = x.eid && S.encounters.find(y => y.id === x.eid); const w = c?.work || e?.work;
+      return `<button class="nrow" ${c ? `data-act="openC" data-cid="${c.id}"` : e ? `data-act="openEnc" data-eid="${e.id}"` : ''}>${w ? `<img src="${src(w)}" alt="">` : ''}<div>${esc(x.text)}<span>${ago(x.at)}</span></div></button>`; }).join('') : '<div class="empty">新しいお知らせはありません。</div>'); }
   if (p === 'edit'){ const m = P.form;
     return shell('プロフィールを編集', `<div style="display:grid;justify-items:center;gap:8px;padding:8px 0 16px"><img src="${art(m.avatarSeed, 0, [1,1], 140)}" alt="" style="width:84px;height:84px;border-radius:50%"><button class="linkbtn" data-act="shuffleAv">アイコンを変える</button></div>
       <form id="profForm" style="display:grid;gap:14px" novalidate>
@@ -944,7 +985,7 @@ const push = P => { UI.pages.push(P); renderPage(); };
 const pop = () => { UI.pages.pop(); if (UI.pages.length) renderPage(); else render(); };
 function modal(html){ $('#fx').innerHTML = `<div class="modal" data-act="modalBg">${html}</div>`; }
 function closeFx(){ $('#fx').innerHTML = ''; }
-function notify(text, c){ S.notifications.push({ text, at: Date.now(), read:false, cid: c?.id }); if (S.notifications.length > 40) S.notifications.shift(); }
+function notify(text, c, eid){ S.notifications.push({ text, at: Date.now(), read:false, cid: c?.id, eid }); if (S.notifications.length > 40) S.notifications.shift(); }
 
 /* ================= actions ================= */
 function simulatePass(){
@@ -952,14 +993,13 @@ function simulatePass(){
   if (S.passLog.count >= s.dailyLimit){ toast(`今日は上限の${s.dailyLimit}人に達しました。上限は設定で変えられます。`); return; }
   const n = Math.min(1 + Math.floor(Math.random()*2), s.dailyLimit - S.passLog.count), place = pick(PLACES); let added = 0, last;
   for (let i = 0; i < n; i++){
-    let a, tries = 0; do { a = pick(ARTISTS); tries++; } while (isBlocked(a.handle) && tries < 30); if (isBlocked(a.handle)) continue;
-    let w = museumOf(a)[0];
-    if (s.receiveTags.length && !w.tags.some(t => s.receiveTags.includes(t))) w = { ...makeWork(Math.random, a, s.receiveTags), id: a.handle + ':t' + uid() };
-    else if (S.collection.some(c => c.work.id === w.id)) w = { ...makeWork(Math.random, a), id: a.handle + ':' + uid() };
-    last = { id: uid(), source:'pass', place, at: Date.now() - i*1000, work: w }; S.collection.push(last); added++;
+    let a, tries = 0; do { a = pick(ARTISTS); tries++; } while ((isBlocked(a.handle) || (s.receiveTags.length && !museumOf(a)[0].tags.some(t => s.receiveTags.includes(t)))) && tries < 40);
+    if (isBlocked(a.handle) || (s.receiveTags.length && !museumOf(a)[0].tags.some(t => s.receiveTags.includes(t)))) continue;
+    // 届くのは相手のサムネ。作品は相手の美術館で1点選んでもらう
+    last = { id: uid(), source:'pass', place, at: Date.now() - i*1000, work: museumOf(a)[0], pickedId: null }; S.encounters.push(last); added++;
   }
-  if (!added){ toast('近くにいたのはブロック中の人だけでした'); return; }
-  S.passLog.count += added; if (s.notifyPass) notify(`${place.name}で${added}人とすれ違い、作品が${added}点届きました`, last);
+  if (!added){ toast('近くにいたのは、受け取る条件に合わない人だけでした'); return; }
+  S.passLog.count += added; if (s.notifyPass) notify(`${place.name}で${added}人とすれ違いました。美術館から好きな作品を1点ずつもらえます`, null, last.id);
   UI.carIndex = 0; save(); render(); toast(`${s.location === 'off' ? '' : place.name + 'で'}${added}人とすれ違いました`);
 }
 function switchMode(){
@@ -981,19 +1021,20 @@ function openWorkForm(w){
   push({ type:'form', id: w?.id || null, draft: w ? { img: w.img || null, seed: w.img ? null : w.seed, style: w.style, aspect: w.aspect, title: w.title, desc: w.desc || '', tags: w.tags.slice(), q:'', thumb: S.thumbId === w.id }
     : { img:null, seed:null, aspect:[4,5], title:'', desc:'', tags:[], q:'', thumb: !S.myWorks.length } });
 }
-const openArtist = a => push({ type:'museum', kind:'artist', artist: a, view:'wall' });
+// 相手の美術館を開く。まだ作品を選んでいないすれ違いがあれば、その出会いの分だけ1点もらえる
+const openArtist = (a, encId) => push({ type:'museum', kind:'artist', artist: a, view:'wall', encId: encId || openEncOf(a)?.id || null });
 
 document.addEventListener('click', e => {
   const b = e.target.closest('button, [data-act]'); if (!b) return; const d = b.dataset; const P = topPage();
   if (d.tab){ UI.pages = []; closeFx(); endGacha(); UI.tab = d.tab; render(); window.scrollTo(0,0); return; }
   if (d.ci !== undefined){ const i = +d.ci, car = $('#car'); const { list } = homeItems();
     if (i !== UI.carIndex){ const it = car.children[i]; car.scrollTo({ left: it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2, behavior: reduced ? 'auto' : 'smooth' }); }
-    else openArtist(list[i].work.artist); return; }
-  if (d.pin){ const map = $('#map'); if (map?.dataset.justDragged) return; const c = coll().find(x => x.id === d.pin);
-    if (UI.selPin === d.pin) openArtist(c.work.artist);
-    else { UI.selPin = d.pin; map.classList.add('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.toggle('sel', p.dataset.pin === d.pin)); map.querySelector('.mcard').innerHTML = infoCard(c); layoutMap(true); }
+    else openArtist(list[i].work.artist, list[i].id); return; }
+  if (d.pin){ const map = $('#map'); if (map?.dataset.justDragged) return; const c = encs().find(x => x.id === d.pin);
+    if (UI.selPin === d.pin) openArtist(c.work.artist, c.id);
+    else { UI.selPin = d.pin; map.classList.add('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.toggle('sel', p.dataset.pin === d.pin)); map.querySelector('.mcard').innerHTML = infoCard(c, { enc:true }); layoutMap(true); }
     return; }
-  if (d.wi !== undefined){ const x = P._works[+d.wi]; if (x.mine) openWorkForm(x.w); else push({ type:'detail', w: x.w, c: x.c || null, from: P.kind === 'artist' ? 'artist' : 'coll' }); return; }
+  if (d.wi !== undefined){ const x = P._works[+d.wi]; if (x.mine) openWorkForm(x.w); else push({ type:'detail', w: x.w, c: x.c || null, from: P.kind === 'artist' ? 'artist' : 'coll', enc: P.kind === 'artist' ? P._enc : null }); return; }
   if (d.ptab){ UI.ptab = d.ptab; render(); return; }
   if (d.pf){ UI.pfilter = d.pf; render(); return; }
   if (d.limit){ S.settings.dailyLimit = +d.limit; save(); renderPage(true); return; }
@@ -1016,6 +1057,17 @@ document.addEventListener('click', e => {
     case 'openMine': push({ type:'museum', kind:'mine', view:'wall' }); break;
     case 'openColl': push({ type:'museum', kind:'coll', src: d.src, view:'wall' }); break;
     case 'openPlace': push({ type:'museum', kind:'place', place: d.place, view:'wall' }); break;
+    case 'openEnc': { const e = S.encounters.find(x => x.id === d.eid); if (e) openArtist(e.work.artist, e.id); break; }
+    case 'askPick': modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgP"><h2 id="dlgP">この作品をもらいますか？</h2><p>すれ違い1回につき1点だけ選べます。あとから選び直すことはできません。</p>
+        <div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" style="color:var(--blue)" data-act="doPick">もらう</button></div></div>`); break;
+    case 'doPick': {
+      const e = P.enc, w = P.w; if (!e || e.pickedId){ closeFx(); break; }
+      const c = { id: uid(), source:'pass', place: e.place, at: Date.now(), work: w, encId: e.id };
+      e.pickedId = w.id; S.collection.push(c); P.c = c; save();
+      $('#fx').innerHTML = revealHTML(w, `${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(placeLabel(e.place))}`,
+        `<button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxColl">コレクションを見る</button>`, 'もらった作品');
+      break; }
+    case 'fxColl': closeFx(); UI.pages = []; UI.tab = 'me'; UI.ptab = 'others'; render(); window.scrollTo(0,0); break;
     case 'openC': { const c = S.collection.find(x => x.id === d.cid); if (c) push({ type:'detail', w: c.work, c, from:'coll' }); break; }
     case 'wallView': P.view = P.view === 'grid' ? 'wall' : 'grid'; renderPage(true); break;
     case 'toArtist': openArtist(P.w.artist); break;
