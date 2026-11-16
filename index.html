@@ -186,6 +186,23 @@ img{display:block}
 .minicat{height:22px;padding:0 14px;border-radius:11px;color:#fff;font-size:11px;font-weight:800;display:inline-grid;place-items:center}
 .gsub{font-size:11px;font-weight:700}
 .gnote{font-size:11px;color:var(--muted);text-align:center;margin:8px 0 0}
+/* gacha: rainbow launch → tap the globe */
+.rainbow{position:fixed;inset:0;z-index:96;pointer-events:none;overflow:hidden}
+.rainbow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.rainbow g{animation:rbFly .5s .5s cubic-bezier(.5,0,.9,.4) forwards}
+.rainbow path{fill:none;stroke-width:10px;stroke-linecap:round;stroke-dasharray:100 100;stroke-dashoffset:100;animation:rbDraw .55s cubic-bezier(.2,.9,.3,1.15) forwards}
+@keyframes rbDraw{to{stroke-dashoffset:0}}
+@keyframes rbFly{to{transform:translate(45px,-45px);opacity:0}}
+.tapcall{padding-top:34px;text-align:center;font-weight:800;font-size:28px;letter-spacing:.06em;color:var(--coral);animation:tapBounce 1s ease-in-out infinite}
+.tapcall.hit{animation:none;color:var(--blue)}
+@keyframes tapBounce{50%{transform:scale(1.08)}}
+.stage.tap{height:400px;cursor:pointer;outline-offset:-8px}
+.stage .ring{position:absolute;top:50%;left:50%;width:230px;height:230px;margin:-115px;border-radius:50%;border:4px solid rgba(74,155,245,.55);animation:tapRing 1.4s ease-out infinite;pointer-events:none}
+.stage .finger{position:absolute;left:calc(50% + 62px);top:calc(50% + 40px);width:58px;height:58px;z-index:3;pointer-events:none;animation:tapFinger 1s ease-in-out infinite}
+.stage.spin .ring,.stage.spin .finger{display:none}
+@keyframes tapRing{0%{transform:scale(.85);opacity:.9}100%{transform:scale(1.3);opacity:0}}
+@keyframes tapFinger{50%{transform:translate(-7px,-7px) scale(.9)}}
+.tapnote{font-size:12px;font-weight:700}
 
 /* draw overlay */
 .draw{position:fixed;inset:0;z-index:85;background:rgba(255,248,232,.97);display:grid;place-items:center;overflow:hidden;animation:fade .3s}
@@ -636,17 +653,17 @@ function propSVG(kind){
   return P[kind] || '';
 }
 function viewGacha(){
-  rollDay(); const cat = GACHA_CATS[UI.cat], n = S.coins.n;
+  rollDay(); const cat = GACHA_CATS[UI.cat], n = S.coins.n, tap = !!UI.gPhase;
   const land = 'M20,90c18-30 52-34 70-18 10 9 4 24 20 30 22 8 30 34 12 46-20 13-46-6-62-10-22-5-48-14-40-48zM150,60c26-14 64-8 78 12 9 13-6 22-2 36 5 17 26 22 18 40-10 20-44 14-58 0-12-12-6-30-22-40-20-12-34-36-14-48zM290,120c16-12 44-10 54 6 8 13-8 26-24 30-22 5-46-20-30-36zM90,190c24-6 52 6 52 22s-30 26-50 18-24-36-2-40z';
   return `<div class="app pad-nav" style="position:relative">
     <header class="chead shadow wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-tab="me" aria-label="マイページ">${I.user}</button></header>
     <div class="coins" aria-label="作品コイン ${n}枚">${I.coin}<span>${n}</span></div>
     <div class="wrap">
-      <div class="catrow"><button class="arrow" data-act="catPrev" aria-label="前のジャンル">${I.left}</button>
+      ${tap ? `<div class="tapcall ${UI.gPhase === 'spin' ? 'hit' : ''}" id="tapcall">${UI.gPhase === 'spin' ? '…！' : '地球儀をタップ！'}</div>` : `<div class="catrow"><button class="arrow" data-act="catPrev" aria-label="前のジャンル">${I.left}</button>
         <button class="cat" style="background:${cat.color}" data-act="catNext" aria-label="ジャンル：${cat.label}（タップで切り替え）">${cat.label}</button>
-        <button class="arrow" data-act="catNext" aria-label="次のジャンル">${I.right}</button></div>
-      <div class="stage" id="stage">
-        <span class="shadow"></span>
+        <button class="arrow" data-act="catNext" aria-label="次のジャンル">${I.right}</button></div>`}
+      <div class="stage ${tap ? 'tap' : ''} ${UI.gPhase === 'spin' ? 'spin' : ''}" id="stage" ${tap ? 'role="button" tabindex="0" data-act="crack" aria-label="地球儀をタップして作品を受け取る"' : ''}>
+        <span class="shadow"></span>${tap ? `<span class="ring"></span><svg class="finger" viewBox="0 0 64 64" aria-hidden="true"><path d="M24 30V12a5 5 0 0 1 10 0v16l2-1a5 5 0 0 1 6 2l1 1a5 5 0 0 1 7 3l1 2a5 5 0 0 1 6 4v9c0 9-7 15-16 15h-6c-6 0-10-3-13-8l-7-11a5 5 0 0 1 8-6z" fill="#fff" stroke="#121212" stroke-width="3" stroke-linejoin="round"/></svg>` : ''}
         <svg class="globe" viewBox="0 0 300 300" aria-hidden="true">
           <g id="propsBack"></g>
           <path id="orbitBack" d="" fill="none" stroke="#FFE45C" stroke-width="3.5" opacity=".9"/>
@@ -659,13 +676,13 @@ function viewGacha(){
           <g id="propsFront"></g>
         </svg>
       </div>
-      <div class="gbox">
+      ${tap ? `<p class="gnote tapnote">タップすると「${cat.label}」の作品が届きます</p>` : `<div class="gbox">
         <button class="gbtn" data-act="draw" ${n <= 0 ? 'disabled' : ''}>ガチャを回す</button>
         <div class="gline">作品コイン ${I.coin} を一枚消費して</div>
         <span class="minicat" style="background:${cat.color}">${cat.label}</span>
         <div class="gsub">ガチャを回す</div>
       </div>
-      <p class="gnote">${n > 0 ? '作品コインは毎日5枚配られます（0:00にリセット）。ガチャで届いた作品には場所が残りません。' : '今日のコインを使い切りました。明日 0:00 に5枚配られます。'}</p>
+      <p class="gnote">${n > 0 ? '作品コインは毎日5枚配られます（0:00にリセット）。ガチャで届いた作品には場所が残りません。' : '今日のコインを使い切りました。明日 0:00 に5枚配られます。'}</p>`}
     </div></div>`;
 }
 let globeRAF = 0;
@@ -693,29 +710,52 @@ function runGlobe(){
   globeRAF = requestAnimationFrame(step);
   const st = $('#stage'); let sx = null;
   st.addEventListener('pointerdown', e => sx = e.clientX);
-  st.addEventListener('pointerup', e => { if (sx !== null && Math.abs(e.clientX - sx) > 40) setCat(UI.cat + (e.clientX < sx ? 1 : -1)); sx = null; });
+  st.addEventListener('pointerup', e => { if (!UI.gPhase && sx !== null && Math.abs(e.clientX - sx) > 40) setCat(UI.cat + (e.clientX < sx ? 1 : -1)); sx = null; });
 }
 function setCat(i){ UI.cat = (i + GACHA_CATS.length) % GACHA_CATS.length; render(); }
 function draw(){
-  rollDay(); if (S.coins.n <= 0) return;
+  rollDay(); if (S.coins.n <= 0 || UI.gPhase) return;
   const cat = GACHA_CATS[UI.cat];
   let w, tries = 0; do { w = makeWork(Math.random, null, cat.tags); tries++; } while (isBlocked(w.artist.handle) && tries < 20);
   w.at = Date.now();
   const c = { id: uid(), source:'gacha', place:null, at: Date.now(), work: w };
   S.coins.n--; S.collection.push(c); if (S.settings.notifyGacha) notify(`ガチャで「${w.title}」（${w.artist.name}）が届きました`, c); save();
+  UI.pending = { c, cat };
   const btn = $('[data-act=draw]'); if (btn) btn.disabled = true;
-  $('#stage')?.classList.add('spin');
-  setTimeout(() => {
-    $('#fx').innerHTML = `<div class="draw" role="dialog" aria-modal="true" aria-label="ガチャの結果">
-      <div class="rays"></div>
-      <div class="col">
-        <div class="env"><div class="back2"></div><div class="card">${frame(w)}</div><div class="body"></div><div class="flap"></div><div class="seal"></div></div>
-        <div class="txt"><small>NEW ARTWORK</small><b>${esc(w.title)}</b><span>${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(cat.label)}</span></div>
-        <div class="btns"><button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxMuseum" data-cid="${c.id}">美術館を見る</button></div>
-      </div></div>`;
-    $('#stage')?.classList.remove('spin');
-  }, reduced ? 0 : 1100);
+  rainbow(() => { UI.gPhase = 'tap'; render(); $('#stage')?.focus({ preventScroll:true }); });
 }
+// 左下から右上へ虹がビョーンと伸びて飛んでいき、クリーム色のホワイトアウトで画面が変わる
+function rainbow(done){
+  if (reduced){ done(); return; }
+  const cols = ['#FF4D4D','#FF9F1C','#FFD23F','#3EC46D','#3FA9F5','#4D5BFF','#9B5DE5'];
+  const el = document.createElement('div'); el.className = 'rainbow'; el.setAttribute('aria-hidden', 'true');
+  // 画面の実寸で描く：左下の外から右上の外へ、左上にふくらむ太い虹のアーチ（帯は斜め方向にずらして重ねる）
+  const W = innerWidth, H = innerHeight, gap = 9;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}"><g>${cols.map((c, i) => { const o = (i - 3) * gap;
+    return `<path d="M${-70 + o} ${H + 70 + o} Q ${W * .02 + o} ${H * .12 + o} ${W + 70 + o} ${-70 + o}" stroke="${c}" pathLength="100" style="animation-delay:${(i * .025).toFixed(3)}s"/>`; }).join('')}</g></svg>`;
+  document.body.appendChild(el);
+  const wo = $('#whiteout');
+  setTimeout(() => wo.classList.add('on'), 700);
+  setTimeout(() => { done(); el.remove(); setTimeout(() => wo.classList.remove('on'), 80); }, 1000);
+}
+function crack(){
+  if (UI.gPhase !== 'tap' || !UI.pending) return;
+  UI.gPhase = 'spin'; $('#stage')?.classList.add('spin');
+  const tc = $('#tapcall'); if (tc){ tc.textContent = '…！'; tc.classList.add('hit'); }
+  setTimeout(showResult, reduced ? 0 : 1100);
+}
+function showResult(){
+  const p = UI.pending; if (!p) return; const { c, cat } = p, w = c.work;
+  $('#fx').innerHTML = `<div class="draw" role="dialog" aria-modal="true" aria-label="ガチャの結果">
+    <div class="rays"></div>
+    <div class="col">
+      <div class="env"><div class="back2"></div><div class="card">${frame(w)}</div><div class="body"></div><div class="flap"></div><div class="seal"></div></div>
+      <div class="txt"><small>NEW ARTWORK</small><b>${esc(w.title)}</b><span>${esc(w.artist.name)}（@${esc(w.artist.handle)}）・${esc(cat.label)}</span></div>
+      <div class="btns"><button class="pbtn" data-act="fxClose">閉じる</button><button class="pbtn blue" data-act="fxMuseum" data-cid="${c.id}">美術館を見る</button></div>
+    </div></div>`;
+  $('#stage')?.classList.remove('spin');
+}
+function endGacha(){ UI.gPhase = null; UI.pending = null; }
 
 /* ================= MY PAGE ================= */
 function collage(works){
@@ -934,7 +974,7 @@ const openArtist = a => push({ type:'museum', kind:'artist', artist: a, view:'wa
 
 document.addEventListener('click', e => {
   const b = e.target.closest('button, [data-act]'); if (!b) return; const d = b.dataset; const P = topPage();
-  if (d.tab){ UI.pages = []; closeFx(); UI.tab = d.tab; render(); window.scrollTo(0,0); return; }
+  if (d.tab){ UI.pages = []; closeFx(); endGacha(); UI.tab = d.tab; render(); window.scrollTo(0,0); return; }
   if (d.ci !== undefined){ const i = +d.ci, car = $('#car'); const { list } = homeItems();
     if (i !== UI.carIndex){ const it = car.children[i]; car.scrollTo({ left: it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2, behavior: reduced ? 'auto' : 'smooth' }); }
     else openArtist(list[i].work.artist); return; }
@@ -959,8 +999,9 @@ document.addEventListener('click', e => {
     case 'catPrev': setCat(UI.cat - 1); break;
     case 'catNext': setCat(UI.cat + 1); break;
     case 'draw': draw(); break;
-    case 'fxClose': closeFx(); render(); break;
-    case 'fxMuseum': { const c = S.collection.find(x => x.id === d.cid); closeFx(); render(); openArtist(c.work.artist); break; }
+    case 'crack': crack(); break;
+    case 'fxClose': closeFx(); endGacha(); render(); break;
+    case 'fxMuseum': { const c = S.collection.find(x => x.id === d.cid); closeFx(); endGacha(); render(); openArtist(c.work.artist); break; }
     case 'openMine': push({ type:'museum', kind:'mine', view:'wall' }); break;
     case 'openColl': push({ type:'museum', kind:'coll', src: d.src, view:'wall' }); break;
     case 'openPlace': push({ type:'museum', kind:'place', place: d.place, view:'wall' }); break;
@@ -1009,7 +1050,8 @@ document.addEventListener('input', e => {
 document.addEventListener('compositionend', e => { if (e.target.id === 'ftag') e.target.dispatchEvent(new Event('input', { bubbles:true })); });
 document.addEventListener('keydown', e => {
   if (e.target.id === 'ftag' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); const v = e.target.value.replace(/^#/, '').trim(); if (v){ syncForm(); const P = topPage(); if (P.draft.tags.length < 5 && !P.draft.tags.includes(v)) P.draft.tags.push(v); P.draft.q = ''; renderPage(true); $('#ftag').focus(); } }
-  if (e.key === 'Escape'){ if ($('#fx').innerHTML){ closeFx(); if (UI.tab === 'gacha') render(); } else if (UI.pages.length) pop(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'stage' && UI.gPhase === 'tap'){ e.preventDefault(); crack(); }
+  if (e.key === 'Escape'){ if ($('#fx').innerHTML){ closeFx(); endGacha(); if (UI.tab === 'gacha') render(); } else if (UI.pages.length) pop(); }
 });
 document.addEventListener('change', e => { if (e.target.id === 'file') takeFile(e.target.files[0]); });
 document.addEventListener('dragover', e => { const dz = e.target.closest?.('#drop'); if (dz){ e.preventDefault(); dz.classList.add('drag'); } });
