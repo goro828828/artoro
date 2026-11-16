@@ -433,7 +433,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ================= sound：BGMと効果音（音声ファイルは使わず、Web Audioでその場で合成） ================= */
 const Sound = (() => {
-  let ctx = null, master, bgmBus, seBus, noiseBuf, unlocked = false, want = null, cur = null, track = null, trackGain = null, step = 0, nextT = 0, timer = null, muteUntil = 0;
+  let ctx = null, master, bgmBus, seBus, wet, noiseBuf, unlocked = false, want = null, cur = null, track = null, trackGain = null, step = 0, nextT = 0, timer = null, muteUntil = 0;
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
   function init(){
     if (ctx) return; const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -441,6 +441,11 @@ const Sound = (() => {
     const warm = ctx.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 6500; warm.connect(master);
     bgmBus = ctx.createGain(); bgmBus.connect(warm); seBus = ctx.createGain(); seBus.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    // きらめき系の効果音にかける軽いリバーブ（1.6秒の残響を合成）
+    const len = Math.floor(ctx.sampleRate * 1.6), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++){ const ch = ir.getChannelData(c); for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+    const rev = ctx.createConvolver(), revOut = ctx.createGain(); rev.buffer = ir; revOut.gain.value = .45; rev.connect(revOut); revOut.connect(seBus);
+    wet = ctx.createGain(); wet.connect(seBus); wet.connect(rev);
     applyVol();
   }
   function applyVol(){ if (!ctx) return; const st = S.settings; master.gain.value = st.vol ?? .7;
@@ -523,22 +528,27 @@ const Sound = (() => {
     zoom:    t => { tone(seBus, { f: 320, t, dur: .28, glide: 1300, vol: .11, a: .01, dec: .3 }); noise(seBus, { t, dur: .3, vol: .06, type: 'bandpass', f: 500, f2: 4000, q: 2 }); },
     whoosh:  t => noise(seBus, { t, dur: .5, vol: .12, type: 'bandpass', f: 250, f2: 3000, q: 1.5 }),
     rush:    t => { [0,4,7,12,16,19].forEach((k, n) => tone(seBus, { f: mtof(72 + k), t: t + n * .05, dur: .2, type: 'triangle', vol: .07, a: .003, dec: .2 })); noise(seBus, { t, dur: .7, vol: .1, type: 'bandpass', f: 300, f2: 5000 }); },
-    // ガチャの虹：ゲームでよくある「ウィーン」と上がっていくチャージ音（2本のノコギリ波＋共鳴フィルターが一緒に上がる）
+    // ガチャの虹：今どきのガチャ演出の定番の組み立て（溜め → 当たり → 余韻）
+    //  ①逆再生シンバル風のシャーッという盛り上がり ②鉄琴が2オクターブ駆け上がるキラキラ ③細かいきらめきの粒がだんだん増える
+    //  ④帯が画面を埋めた瞬間（0.62秒）に明るいチャイムの和音＋ふわっとした低音 ⑤きらめきの余韻と、右上へ抜ける風
     rainbow: t => {
-      const end = t + 1.0, flt = ctx.createBiquadFilter(), g = ctx.createGain();
-      flt.type = 'lowpass'; flt.Q.value = 9; flt.frequency.setValueAtTime(350, t); flt.frequency.exponentialRampToValueAtTime(5200, t + .78);
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.11, t + .08); g.gain.setValueAtTime(.11, t + .62); g.gain.exponentialRampToValueAtTime(.0001, end);
-      [-9, 9].forEach(dt => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.detune.value = dt;
-        o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(1040, t + .78); o.connect(flt); o.start(t); o.stop(end + .05); });
-      const sub = ctx.createOscillator(), sg = ctx.createGain(); sub.type = 'sine'; sub.frequency.setValueAtTime(65, t); sub.frequency.exponentialRampToValueAtTime(520, t + .78);
-      sg.gain.setValueAtTime(0, t); sg.gain.linearRampToValueAtTime(.1, t + .08); sg.gain.exponentialRampToValueAtTime(.0001, end); sub.connect(sg); sg.connect(seBus); sub.start(t); sub.stop(end + .05);
-      flt.connect(g); g.connect(seBus);
-      noise(seBus, { t, dur: .85, vol: .07, type: 'bandpass', f: 400, f2: 7000, q: 2 });
-      [91, 96].forEach((m, n) => bell(seBus, m, t + .74 + n * .06, .5, .045));   // 上がりきったところで小さくキラッ
+      const hit = t + .62;
+      const sw = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), sg = ctx.createGain();
+      sw.buffer = noiseBuf; sw.loop = true; hp.type = 'highpass'; hp.frequency.setValueAtTime(3500, t); hp.frequency.exponentialRampToValueAtTime(9000, hit);
+      sg.gain.setValueAtTime(.0001, t); sg.gain.exponentialRampToValueAtTime(.09, hit - .02); sg.gain.exponentialRampToValueAtTime(.0001, hit + .06);
+      sw.connect(hp); hp.connect(sg); sg.connect(seBus); sw.start(t); sw.stop(hit + .1);
+      [72,74,76,79,81,84,86,88,91,93,96,98].forEach((m, n) => bell(wet, m, t + n * .048, .35, .042));
+      const grain = (tt, vol) => { const m = [96,98,100,103,105,108][Math.floor(Math.random() * 6)]; tone(wet, { f: mtof(m) * (1 + (Math.random() - .5) * .01), t: tt, dur: .12, vol, a: .002, dec: .12 }); };
+      for (let k = 0; k < 26; k++) grain(t + .6 * Math.sqrt(Math.random()), .016);
+      [84,88,91,95,100].forEach(m => bell(wet, m, hit, 1.2, .045));
+      tone(seBus, { f: 120, t: hit, dur: .4, glide: 55, vol: .16, a: .004, dec: .4 });
+      noise(wet, { t: hit, dur: .35, vol: .06, type: 'bandpass', f: 900, f2: 220, q: .8 });
+      for (let k = 0; k < 22; k++) grain(hit + .04 + Math.pow(Math.random(), 1.6) * .9, .013);
+      noise(seBus, { t: hit + .04, dur: .6, vol: .05, type: 'bandpass', f: 5000, f2: 1500 });
     },
     pop:     t => { tone(seBus, { f: 240, t, dur: .18, glide: 70, vol: .3, a: .002, dec: .2 }); tone(seBus, { f: mtof(88), t, dur: .08, type: 'triangle', vol: .12, a: .002, dec: .1 }); },
     spin:    t => tone(seBus, { f: 200, t, dur: 1.1, glide: 900, type: 'sawtooth', vol: .03, a: .05, dec: 1.1, filter: 1500 }),
-    sparkle: t => [84,88,91,96,100].forEach((m, n) => bell(seBus, m, t + n * .07, .5, .07)),
+    sparkle: t => { [84,88,91,96,100].forEach((m, n) => bell(wet, m, t + n * .07, .6, .06)); for (let k = 0; k < 14; k++) tone(wet, { f: mtof([96,100,103,108][k % 4]), t: t + .1 + Math.random() * .7, dur: .12, vol: .014, a: .002, dec: .12 }); },
     toggle:  t => { tone(seBus, { f: 1400, t, dur: .03, type: 'square', vol: .04, a: .001, dec: .03, filter: 4000 }); tone(seBus, { f: 1800, t: t + .04, dur: .03, type: 'square', vol: .04, a: .001, dec: .03, filter: 4000 }); },
     lift:    t => tone(seBus, { f: 420, t, dur: .12, glide: 640, vol: .14, a: .003, dec: .12 }),
     drop:    t => tone(seBus, { f: 520, t, dur: .12, glide: 300, vol: .14, a: .003, dec: .12 }),
