@@ -138,7 +138,24 @@ img{display:block}
 .wall{position:relative;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)))}
 .wall::-webkit-scrollbar{display:none}
 .wall .inner{position:relative;height:100%}
-.wall .w{position:absolute;display:block}
+.wall .w{position:absolute;display:block;transition:left .25s ease,top .25s ease,transform .2s ease}
+/* マイ美術館：長押しで持ち上げて並べ替え／点線の＋で作品を追加 */
+.wall .w.pressing{transform:scale(.96);transition:transform .45s ease}
+.wall .w.lift{z-index:20;transition:none;transform:scale(1.07);filter:drop-shadow(0 16px 18px rgba(0,0,0,.35));cursor:grabbing}
+.wall.dragging{cursor:grabbing}
+.addtile{position:absolute;display:grid;place-content:center;justify-items:center;gap:6px;aspect-ratio:4/5.2;border:2px dashed #C4C4C4;border-radius:14px;color:#9A9A9A;font-size:11px;font-weight:700;background:rgba(0,0,0,.015);transition:left .25s ease,top .25s ease}
+.addtile svg{width:30px;height:30px}
+.addtile:hover{border-color:var(--coral);color:var(--coral)}
+.mgrid .addtile{position:relative}
+.album{cursor:pointer}
+.album .heart{width:26px;height:26px;margin:-5px -2px -5px -6px;display:grid;place-items:center;border-radius:50%;color:#444}
+.album .heart svg{width:15px;height:15px}
+.album .heart.on{color:var(--coral)}
+.album .heart.on svg path{fill:currentColor}
+.album .ah .ttl2{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.passchip{font-size:9.5px;font-weight:800;color:#fff;background:var(--coral);border-radius:8px;padding:1px 7px;margin-left:2px;white-space:nowrap}
+.inp-dlg{width:100%;border:0;background:var(--bg2);border-radius:10px;padding:10px 12px;font-size:14px;margin:4px 0 12px}
+.inp-dlg:focus{outline:2px solid var(--blue)}
 .prog{height:4px;border-radius:2px;background:var(--bg3);margin:18px 8px 0;position:relative;overflow:hidden}
 .prog i{position:absolute;top:0;bottom:0;left:0;border-radius:2px;background:#888}
 .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px 22px;padding-top:16px;align-items:center}
@@ -539,6 +556,24 @@ function seedState(){
 let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
 if (!S || !S.me) S = seedState();
 if (!S.myWorks.some(w => w.id === S.thumbId)) S.thumbId = S.myWorks[0]?.id || null;
+// マイ美術館は展示室（タブ）に分かれる。作品の並び順は展示室ごとに持つ
+function ensureAlbums(){
+  if (!Array.isArray(S.albums) || !S.albums.length) S.albums = [{ id:'a1', name:'マイ美術館', workIds: S.myWorks.map(w => w.id) }];
+  const ids = new Set(S.myWorks.map(w => w.id));
+  S.albums.forEach(a => a.workIds = a.workIds.filter(id => ids.has(id)));
+  const placed = new Set(S.albums.flatMap(a => a.workIds));
+  S.myWorks.forEach(w => { if (!placed.has(w.id)) S.albums[0].workIds.push(w.id); });
+  if (!S.albumThumbs){ const a = S.albums.find(x => x.workIds.includes(S.thumbId)); if (a) a.thumbId = S.thumbId; S.albumThumbs = true; }   // 旧データ：全体で1つだったサムネを、その展示室のサムネにする
+  S.albums.forEach(a => { if (!a.workIds.includes(a.thumbId)) a.thumbId = a.workIds[0] || null; pinThumb(a); });
+  if (!S.albums.some(a => a.id === S.passAlbumId)) S.passAlbumId = (S.albums.find(a => a.thumbId === S.thumbId) || S.albums[0]).id;
+  syncThumb();
+}
+// サムネは展示室ごとに1つ。設定したら問答無用で左上（並びの先頭）に置く
+function pinThumb(a){ if (a.thumbId && a.workIds.includes(a.thumbId)) a.workIds = [a.thumbId, ...a.workIds.filter(x => x !== a.thumbId)]; }
+// ハートを付けた展示室が「すれ違いで見せる美術館」。その展示室のサムネが相手に届く
+const passAlbum = () => S.albums.find(a => a.id === S.passAlbumId) || S.albums[0];
+function syncThumb(){ S.thumbId = passAlbum()?.thumbId || null; }
+ensureAlbums();
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast('この端末に保存できませんでした。画像を小さくして試してください。'); } }
 function rollDay(){ const t = todayKey(); if (S.coins.date !== t) S.coins = { date:t, n:COIN_DAILY }; if (S.passLog.date !== t) S.passLog = { date:t, count:0 }; }
 rollDay();
@@ -552,6 +587,8 @@ const pickedWorkOf = e => e.pickedId ? museumOf(e.work.artist).find(w => w.id ==
 const openEncOf = a => encs().find(e => e.work.artist.handle === a.handle && !e.pickedId);
 const placeLabel = p => S.settings.location === 'off' ? 'すれ違い' : p.name;
 const thumbWork = () => S.myWorks.find(w => w.id === S.thumbId);
+const albumWorks = al => al.workIds.map(id => S.myWorks.find(w => w.id === id)).filter(Boolean);
+const thumbAlbum = () => passAlbum();
 const meAv = () => art(S.me.avatarSeed, 0, [1,1], 140);
 const artistAv = a => art(hash(a.handle), 0, [1,1], 120);
 function homeItems(){ const t = todayKey(); const passes = encs(); const today = passes.filter(c => todayKey(new Date(c.at)) === t); return { list: today.length ? today : passes.slice(0, 8), today: !!today.length }; }
@@ -810,7 +847,11 @@ function viewMe(){
   const usedTags = [...new Set(all.flatMap(c => c.work.tags))];
   let body;
   if (UI.ptab === 'mine'){
-    body = `<button class="album" data-act="openMine"><div class="ah"><span>${I.heart}マイ美術館</span><span>${I.pics}${S.myWorks.length}</span></div>${collage(S.myWorks)}</button>`;
+    body = S.albums.map(al => { const ws = albumWorks(al), on = al.id === passAlbum().id;
+      return `<div class="album" role="button" tabindex="0" data-act="openAlbum" data-aid="${al.id}" aria-label="展示室「${esc(al.name)}」を開く"><div class="ah">
+        <span class="ttl2"><button class="heart ${on ? 'on' : ''}" data-act="passAlbum" data-aid="${al.id}" aria-pressed="${on}" aria-label="「${esc(al.name)}」をすれ違いで見せる美術館にする">${I.heart}</button>${esc(al.name)}${on ? '<span class="passchip">すれ違い中</span>' : ''}</span>
+        <span>${I.pics}${ws.length}</span></div>${collage(ws)}</div>`; }).join('')
+      + `<p class="help">ハートを付けた展示室が、すれ違った相手に見せる美術館になります。その展示室のサムネが相手に届きます。</p>`;
   } else {
     const pass = filtered.filter(c => c.source === 'pass'), gacha = filtered.filter(c => c.source === 'gacha');
     const groups = {}; pass.forEach(c => { (groups[c.place.name] ||= { place:c.place, n:0 }).n++; });
@@ -828,7 +869,7 @@ function viewMe(){
       <div class="ptabs" role="tablist"><button role="tab" aria-selected="${UI.ptab === 'mine'}" data-ptab="mine">マイ美術館</button><button role="tab" aria-selected="${UI.ptab === 'others'}" data-ptab="others">他人の作品</button></div>
       ${body}
     </div></div>
-    ${UI.ptab === 'mine' ? `<button class="fab" data-act="newWork" aria-label="作品を追加">${I.plus}</button>` : ''}`;
+    ${UI.ptab === 'mine' ? `<button class="fab" data-act="newAlbum" aria-label="展示室を追加">${I.plus}</button>` : ''}`;
 }
 
 /* ================= SETTINGS ================= */
@@ -869,25 +910,75 @@ function pageMuseum(P){
     title = `${a.name}の美術館`;
     ownerHTML = `<div class="wall-owner"><img src="${artistAv(a)}" alt=""><div><b>${esc(a.name)}</b><span>@${esc(a.handle)}・${works.length}作品</span></div>
       <button class="editbtn" style="margin-left:auto" data-act="follow" data-h="${esc(a.handle)}">${S.following.includes(a.handle) ? 'フォロー中' : 'フォロー'}</button></div>${pickHTML}`;
-  } else if (P.kind === 'mine'){ works = S.myWorks.map(w => ({ w, mine:true })); title = 'マイ美術館'; }
+  } else if (P.kind === 'mine'){ const al = S.albums.find(a => a.id === P.albumId) || S.albums[0]; P.albumId = al.id; works = albumWorks(al).map(w => ({ w, mine:true })); title = al.name; P._thumb = al.thumbId; }
   else if (P.kind === 'place'){ works = coll().filter(c => c.source === 'pass' && c.place.name === P.place).map(c => ({ w:c.work, c })); title = P.place; }
   else { works = coll().filter(c => c.source === P.src && (UI.pfilter === 'all' || c.work.tags.includes(UI.pfilter))).map(c => ({ w:c.work, c })); title = '他人の作品'; }
   P._works = works;
   const grid = P.view === 'grid';
   const right = `<button class="iconbtn r" data-act="wallView" aria-label="${grid ? '壁に並べて表示' : '一覧で表示'}">${grid ? I.wall : I.grid}</button>`;
-  if (!works.length) return shell(title, `${ownerHTML}<div class="empty">まだ作品がありません。${P.kind === 'mine' ? '<button class="pbtn red" data-act="newWork">作品を追加</button>' : ''}</div>`, right);
+  if (!works.length && P.kind !== 'mine') return shell(title, `${ownerHTML}<div class="empty">まだ作品がありません。${P.kind === 'mine' ? '<button class="pbtn red" data-act="newWork">作品を追加</button>' : ''}</div>`, right);
   const badge = x => P.kind === 'artist' && x.c ? '<span class="wbadge got">もらった</span>' : '';
-  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" aria-label="${esc(x.w.title)}${x.c ? '（もらった作品）' : ''}">${frame(x.w, { ribbon: (P.kind === 'artist' && !!x.thumb) || (P.kind === 'mine' && x.w.id === S.thumbId) })}${badge(x)}</button>`;
+  const item = (x, i, style = '') => `<button class="w" ${style ? `style="${style}"` : ''} data-wi="${i}" ${x.mine ? `data-wid="${x.w.id}"` : ''} aria-label="${esc(x.w.title)}${x.c ? '（もらった作品）' : ''}">${frame(x.w, { ribbon: (P.kind === 'artist' && !!x.thumb) || (P.kind === 'mine' && x.w.id === P._thumb) })}${badge(x)}</button>`;
   let body;
-  if (grid) body = `<div class="mgrid">${works.map((x, i) => item(x, i, 'position:relative')).join('')}</div>`;
+  const mine = P.kind === 'mine';
+  const addTile = style => `<button class="addtile" data-act="addToAlbum" style="${style}" aria-label="この展示室に作品を追加">${I.plus}<span>作品を追加</span></button>`;
+  if (grid) body = `<div class="mgrid">${works.map((x, i) => item(x, i, 'position:relative')).join('')}${mine ? addTile('') : ''}</div>`;
   else {
-    const H = Math.min(Math.min(window.innerWidth, 480) * 1.15, 500), rowH = H * .4; let xt = 22, xb = 22 + H * .2;
-    const pos = works.map((o, i) => { const ar = o.w.aspect[0] / o.w.aspect[1]; const w = Math.min(rowH * ar, H * .62); const row = i % 2;
-      const p = { left: row ? xb : xt, top: row ? H * .55 : H * .02 + (i % 4 === 2 ? H * .03 : 0), w }; if (row) xb += w + 30; else xt += w + 30; return p; });
-    const total = Math.max(xt, xb) + 10;
-    body = `<div class="wall" id="wall" style="height:${H}px"><div class="inner" style="width:${total}px">${works.map((o, i) => item(o, i, `left:${pos[i].left}px;top:${pos[i].top}px;width:${pos[i].w}px`)).join('')}</div></div><div class="prog"><i id="progBar"></i></div>`;
+    const H = Math.min(Math.min(window.innerWidth, 480) * 1.15, 500); P._H = H;
+    const { pos, total } = wallLayout([...works.map(o => o.w.aspect[0] / o.w.aspect[1]), ...(mine ? [ADD_AR] : [])], H);
+    body = `<div class="wall ${mine ? 'reorder' : ''}" id="wall" style="height:${H}px"><div class="inner" style="width:${total}px">${works.map((o, i) => item(o, i, `left:${pos[i].left}px;top:${pos[i].top}px;width:${pos[i].w}px`)).join('')}${mine ? addTile(`left:${pos[works.length].left}px;top:${pos[works.length].top}px;width:${pos[works.length].w}px`) : ''}</div></div><div class="prog"><i id="progBar"></i></div>`;
   }
-  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? '<p class="help">「サムネ」のタグが付いた作品が、すれ違った相手に届きます。作品をタップすると編集できます。</p>' : `<p class="help">${hint}</p>`}`, right);
+  return shell(title, `${ownerHTML}${body}${P.kind === 'mine' ? `<p class="help">${grid ? '' : '作品を長押しして動かすと、並べ替えられます（サムネは左上に固定）。'}点線の＋から、この展示室に作品を追加できます。${P.albumId === passAlbum().id ? '「サムネ」のタグが付いた作品が、すれ違った相手に届きます。' : 'マイページでハートを付けると、この展示室がすれ違いで見せる美術館になります。'}</p>` : `<p class="help">${hint}</p>`}`, right);
+}
+// 壁の2段ずらしの配置（作品の縦横比の並びから位置を決める）
+const ADD_AR = .77;
+function wallLayout(ars, H){
+  const rowH = H * .4; let xt = 22, xb = 22 + H * .2;
+  const pos = ars.map((ar, i) => { const w = Math.min(rowH * ar, H * .62), row = i % 2;
+    const p = { left: row ? xb : xt, top: row ? H * .55 : H * .02 + (i % 4 === 2 ? H * .03 : 0), w }; if (row) xb += w + 30; else xt += w + 30; return p; });
+  return { pos, total: Math.max(xt, xb) + 10 };
+}
+// マイ美術館の壁：長押しで持ち上げ、指を動かすと場所を入れ替える
+function bindReorder(P){
+  const wall = $('#wall'); if (!wall || !wall.classList.contains('reorder')) return;
+  const al = S.albums.find(a => a.id === P.albumId); if (!al) return;
+  const inner = wall.querySelector('.inner'), H = P._H;
+  let timer = null, pressEl = null, drag = null, sx = 0, sy = 0, suppress = false, raf = 0, px = 0, py = 0;
+  const ar = id => { const w = S.myWorks.find(x => x.id === id); return w.aspect[0] / w.aspect[1]; };
+  const relayout = () => { const { pos } = wallLayout([...drag.order.map(ar), ADD_AR], H);
+    drag.order.forEach((id, i) => { if (id === drag.id) return; const el = inner.querySelector(`[data-wid="${id}"]`); el.style.left = pos[i].left + 'px'; el.style.top = pos[i].top + 'px'; });
+    const t = inner.querySelector('.addtile'); if (t){ const p = pos[drag.order.length]; t.style.left = p.left + 'px'; t.style.top = p.top + 'px'; } };
+  const cancelPress = () => { clearTimeout(timer); timer = null; pressEl?.classList.remove('pressing'); pressEl = null; };
+  const place = () => {
+    const el = drag.el, left = drag.l0 + (px - drag.x0) + (wall.scrollLeft - drag.s0), top = drag.t0 + (py - drag.y0);
+    el.style.left = left + 'px'; el.style.top = top + 'px';
+    const cx = left + el.offsetWidth / 2, cy = top + el.offsetHeight / 2; let best = null, bd = 1e9;
+    drag.order.forEach(id => { if (id === drag.id) return; const o = inner.querySelector(`[data-wid="${id}"]`);
+      const d = Math.hypot(parseFloat(o.style.left) + o.offsetWidth / 2 - cx, parseFloat(o.style.top) + o.offsetHeight / 2 - cy); if (d < bd){ bd = d; best = id; } });
+    if (best && bd < Math.max(70, el.offsetWidth * .6)){ const from = drag.order.indexOf(drag.id), to = drag.order.indexOf(best);
+      const to2 = al.thumbId && drag.order[0] === al.thumbId ? Math.max(1, to) : to;   // 左上（サムネの場所）には入れない
+      if (from !== to2){ drag.order.splice(from, 1); drag.order.splice(to2, 0, drag.id); relayout(); } }
+  };
+  const tick = () => { if (!drag) return; const r = wall.getBoundingClientRect(), edge = 44;
+    const v = px < r.left + edge ? -9 : px > r.right - edge ? 9 : 0; if (v){ wall.scrollLeft += v; place(); } raf = requestAnimationFrame(tick); };
+  wall.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.w[data-wid]'); if (!el || drag || el.dataset.wid === al.thumbId) return;   // サムネは左上に固定
+    sx = px = e.clientX; sy = py = e.clientY; pressEl = el; el.classList.add('pressing');
+    timer = setTimeout(() => { timer = null; el.classList.remove('pressing');
+      drag = { el, id: el.dataset.wid, order: al.workIds.slice(), x0: px, y0: py, l0: parseFloat(el.style.left), t0: parseFloat(el.style.top), s0: wall.scrollLeft };
+      el.classList.add('lift'); wall.classList.add('dragging'); try { el.setPointerCapture(e.pointerId); } catch(_){}
+      navigator.vibrate?.(15); suppress = true; raf = requestAnimationFrame(tick); }, 450);
+  });
+  wall.addEventListener('pointermove', e => { px = e.clientX; py = e.clientY;
+    if (!drag){ if (timer && Math.hypot(px - sx, py - sy) > 8) cancelPress(); return; }
+    e.preventDefault(); place(); });
+  wall.addEventListener('touchmove', e => { if (drag) e.preventDefault(); }, { passive:false });
+  const end = () => { cancelPress(); if (!drag) return; cancelAnimationFrame(raf);
+    const changed = drag.order.join() !== al.workIds.join(); al.workIds = drag.order; drag.el.classList.remove('lift'); wall.classList.remove('dragging'); drag = null;
+    if (changed){ save(); toast('並び順を保存しました'); } renderPage(true); };
+  wall.addEventListener('pointerup', end); wall.addEventListener('pointercancel', end);
+  wall.addEventListener('click', e => { if (suppress){ e.stopPropagation(); e.preventDefault(); suppress = false; } }, true);
+  wall.addEventListener('contextmenu', e => { if (e.target.closest('.w[data-wid]')) e.preventDefault(); });
 }
 function pageDetail(P){
   const { w, c } = P; const loc = S.settings.location;
@@ -929,6 +1020,7 @@ function pageSettings(P){
   if (p === 'account') return shell('アカウントセンター', `<div class="sgroup">${srow('editProfile','user','プロフィールを編集','名前、ユーザーネーム、自己紹介')}${srow('noop:pw','key','パスワードとセキュリティ')}${srow('noop:info','info','個人の情報','生年月日、メールアドレス')}</div><p class="help">デモ版のため、パスワードと個人の情報の画面は準備中です。</p>`);
   if (p === 'pass'){ const tw = thumbWork();
     return shell('すれ違い通信', `${trow(s.passMode,'tPass','すれ違い通信','オンの間、近くのARTOROユーザーと作品を交換します')}
+      <div class="sgroup"><h3>すれ違いで見せる美術館</h3><button class="srow" data-act="openMine">${I.heart}<span class="lbl">${esc(passAlbum().name)}<small>マイページの展示室のハートで変更できます</small></span>${I.chev.replace('<svg','<svg class="chev"')}</button></div>
       <div class="sgroup"><h3>相手に届ける作品（サムネ）</h3>${tw ? `<button class="srow" data-act="openMine"><img src="${src(tw)}" alt="" style="width:40px;height:50px;object-fit:cover;border-radius:4px"><span class="lbl">${esc(tw.title)}<small>マイ美術館で変更できます</small></span>${I.chev.replace('<svg','<svg class="chev"')}</button>` : '<p class="help">マイ美術館で作品を「すれ違い通信のサムネ」に設定してください。</p>'}</div>
       <div class="sgroup"><h3>1日に受け取る上限</h3>${[10,20,50].map(n => `<button class="radio" role="radio" aria-checked="${s.dailyLimit === n}" data-limit="${n}"><span class="lbl">${n}人まで</span><span class="o"></span></button>`).join('')}</div>
       <div class="sgroup"><h3>受け取るタグ</h3><p class="help" style="margin-top:0">選んだタグの作品だけを受け取ります。何も選ばなければすべて受け取ります。</p><div class="chips">${TAGS.map(t => `<button aria-pressed="${s.receiveTags.includes(t)}" data-rtag="${esc(t)}">#${esc(t)}</button>`).join('')}</div></div>
@@ -980,7 +1072,7 @@ function renderPage(keep){
   const wall = $('#wall');
   if (wall){ if (keep && prevWall) wall.scrollLeft = prevWall; const bar = $('#progBar');
     const upd = () => { const max = wall.scrollWidth - wall.clientWidth; const vis = Math.max(12, wall.clientWidth / wall.scrollWidth * 100); bar.style.width = vis + '%'; bar.style.left = (max > 0 ? wall.scrollLeft / max : 0) * (100 - vis) + '%'; };
-    wall.addEventListener('scroll', upd, { passive:true }); upd(); }
+    wall.addEventListener('scroll', upd, { passive:true }); upd(); if (P.type === 'museum' && P.kind === 'mine') bindReorder(P); }
 }
 const push = P => { UI.pages.push(P); renderPage(); };
 const pop = () => { UI.pages.pop(); if (UI.pages.length) renderPage(); else render(); };
@@ -1018,9 +1110,9 @@ async function readImage(file){
 }
 function syncForm(){ const P = topPage(); if (P?.type !== 'form') return; const t = $('#ftitle'), d = $('#fcap'), q = $('#ftag'); if (t) P.draft.title = t.value; if (d) P.draft.desc = d.value; if (q) P.draft.q = q.value; }
 async function takeFile(file){ const P = topPage(); try { syncForm(); const r = await readImage(file); P.draft.img = r.img; P.draft.aspect = r.aspect; P.draft.seed = null; renderPage(true); } catch(e){ const er = $('#ferr'); er.textContent = e.message; er.hidden = false; } }
-function openWorkForm(w){
-  push({ type:'form', id: w?.id || null, draft: w ? { img: w.img || null, seed: w.img ? null : w.seed, style: w.style, aspect: w.aspect, title: w.title, desc: w.desc || '', tags: w.tags.slice(), q:'', thumb: S.thumbId === w.id }
-    : { img:null, seed:null, aspect:[4,5], title:'', desc:'', tags:[], q:'', thumb: !S.myWorks.length } });
+function openWorkForm(w, albumId){
+  push({ type:'form', id: w?.id || null, draft: w ? { img: w.img || null, seed: w.img ? null : w.seed, style: w.style, aspect: w.aspect, title: w.title, desc: w.desc || '', tags: w.tags.slice(), q:'', thumb: S.albums.some(a => a.thumbId === w.id) }
+    : { img:null, seed:null, aspect:[4,5], title:'', desc:'', tags:[], q:'', thumb: !(S.albums.find(a => a.id === albumId) || S.albums[0]).workIds.length, albumId: albumId || S.albums[0].id } });
 }
 // 相手の美術館を開く。まだ作品を選んでいないすれ違いがあれば、その出会いの分だけ1点もらえる
 const openArtist = (a, encId) => push({ type:'museum', kind:'artist', artist: a, view:'wall', encId: encId || openEncOf(a)?.id || null });
@@ -1055,7 +1147,14 @@ document.addEventListener('click', e => {
     case 'crack': crack(); break;
     case 'fxClose': closeFx(); endGacha(); render(); break;
     case 'fxMuseum': { const c = S.collection.find(x => x.id === d.cid); closeFx(); endGacha(); render(); openArtist(c.work.artist); break; }
-    case 'openMine': push({ type:'museum', kind:'mine', view:'wall' }); break;
+    case 'openMine': push({ type:'museum', kind:'mine', view:'wall', albumId: thumbAlbum().id }); break;
+    case 'passAlbum': { S.passAlbumId = d.aid; syncThumb(); save(); render(); toast(`「${passAlbum().name}」をすれ違いで見せる美術館にしました`); break; }
+    case 'openAlbum': push({ type:'museum', kind:'mine', view:'wall', albumId: d.aid }); break;
+    case 'addToAlbum': openWorkForm(null, P.albumId); break;
+    case 'newAlbum': modal(`<form class="dialog" id="albumForm" role="dialog" aria-modal="true" aria-labelledby="dlgN" novalidate><h2 id="dlgN">展示室を追加</h2><p>マイ美術館に新しい展示室（タブ）を作ります。</p>
+        <label class="sr" for="albumName">展示室の名前</label><input class="inp-dlg" id="albumName" maxlength="20" value="展示室${S.albums.length + 1}" autocomplete="off">
+        <div class="row"><button type="button" data-act="modalCancel">キャンセル</button><button type="submit" class="del" style="color:var(--blue)">作成</button></div></form>`);
+      setTimeout(() => { const i = $('#albumName'); i?.focus(); i?.select(); }, 50); break;
     case 'openColl': push({ type:'museum', kind:'coll', src: d.src, view:'wall' }); break;
     case 'openPlace': push({ type:'museum', kind:'place', place: d.place, view:'wall' }); break;
     case 'openEnc': { const e = S.encounters.find(x => x.id === d.eid); if (e) openArtist(e.work.artist, e.id); break; }
@@ -1073,7 +1172,7 @@ document.addEventListener('click', e => {
     case 'wallView': P.view = P.view === 'grid' ? 'wall' : 'grid'; renderPage(true); break;
     case 'toArtist': openArtist(P.w.artist); break;
     case 'follow': { const h = d.h, i = S.following.indexOf(h); i >= 0 ? S.following.splice(i,1) : S.following.push(h); save(); renderPage(true); break; }
-    case 'newWork': openWorkForm(null); break;
+    case 'newWork': openWorkForm(null, P?.albumId); break;
     case 'fThumb': syncForm(); P.draft.thumb = !P.draft.thumb; renderPage(true); break;
     case 'askDelete': {
       const mine = P.type === 'form';
@@ -1085,7 +1184,7 @@ document.addEventListener('click', e => {
     case 'modalCancel': closeFx(); break;
     case 'doDelete': {
       closeFx();
-      if (P.type === 'form'){ S.myWorks = S.myWorks.filter(w => w.id !== P.id); if (S.thumbId === P.id) S.thumbId = S.myWorks[0]?.id || null; toast('作品を削除しました'); }
+      if (P.type === 'form'){ S.myWorks = S.myWorks.filter(w => w.id !== P.id); S.albums.forEach(a => { a.workIds = a.workIds.filter(x => x !== P.id); if (a.thumbId === P.id) a.thumbId = a.workIds[0] || null; pinThumb(a); }); syncThumb(); toast('作品を削除しました'); }
       else { S.collection = S.collection.filter(c => c.id !== P.c.id); toast('コレクションから削除しました'); }
       save(); pop(); break; }
     case 'editProfile': push({ type:'settings', page:'edit', form:{ name:S.me.name, handle:S.me.handle, bio:S.me.bio, avatarSeed:S.me.avatarSeed } }); break;
@@ -1095,7 +1194,7 @@ document.addEventListener('click', e => {
     case 'tNotifyGacha': S.settings.notifyGacha = !S.settings.notifyGacha; save(); renderPage(true); break;
     case 'tPrivate': S.me.private = !S.me.private; save(); renderPage(true); break;
     case 'askReset': modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgR"><h2 id="dlgR">データを初期化</h2><p>受け取った作品・マイ美術館・設定をすべて消して、最初の状態に戻します。元に戻せません。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doReset">初期化</button></div></div>`); break;
-    case 'doReset': closeFx(); S = seedState(); S.thumbId = S.myWorks[0].id; save(); UI.pages = []; UI.tab = 'home'; UI.carIndex = 0; render(); toast('データを初期化しました'); break;
+    case 'doReset': closeFx(); S = seedState(); ensureAlbums(); save(); UI.pages = []; UI.tab = 'home'; UI.carIndex = 0; render(); toast('データを初期化しました'); break;
     default:
       if (d.act?.startsWith('go:')) push({ type:'settings', page: d.act.slice(3) });
       else if (d.act?.startsWith('noop:')) toast('デモ版のため、この機能は準備中です');
@@ -1114,6 +1213,7 @@ document.addEventListener('input', e => {
 document.addEventListener('compositionend', e => { if (e.target.id === 'ftag') e.target.dispatchEvent(new Event('input', { bubbles:true })); });
 document.addEventListener('keydown', e => {
   if (e.target.id === 'ftag' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); const v = e.target.value.replace(/^#/, '').trim(); if (v){ syncForm(); const P = topPage(); if (P.draft.tags.length < 5 && !P.draft.tags.includes(v)) P.draft.tags.push(v); P.draft.q = ''; renderPage(true); $('#ftag').focus(); } }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('div[role=button][data-act]')){ e.preventDefault(); e.target.click(); return; }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'stage' && UI.gPhase === 'tap'){ e.preventDefault(); crack(); }
   if (e.key === 'Escape'){ if ($('#fx').innerHTML){ closeFx(); endGacha(); if (UI.tab === 'gacha') render(); } else if (UI.pages.length) pop(); }
 });
@@ -1129,9 +1229,19 @@ document.addEventListener('submit', e => {
     if (msg){ er.textContent = msg; er.hidden = false; return; }
     const data = { title: d.title.trim(), desc: d.desc.trim(), tags: d.tags.slice(), aspect: d.aspect, img: d.img || undefined, seed: d.img ? undefined : d.seed, style: d.style };
     let id = P.id;
-    if (id) Object.assign(S.myWorks.find(w => w.id === id), data); else { id = uid(); S.myWorks.unshift({ id, at: Date.now(), ...data }); }
-    if (d.thumb) S.thumbId = id; else if (S.thumbId === id) S.thumbId = S.myWorks.find(w => w.id !== id)?.id || id;
-    save(); pop(); toast(P.id ? '作品を更新しました' : d.thumb ? '作品を追加し、すれ違い通信のサムネに設定しました' : '作品をマイ美術館に追加しました');
+    let al = null;
+    if (id) Object.assign(S.myWorks.find(w => w.id === id), data);
+    else { id = uid(); S.myWorks.unshift({ id, at: Date.now(), ...data }); al = S.albums.find(a => a.id === d.albumId) || S.albums[0]; al.workIds.push(id); }
+    al = al || S.albums.find(a => a.workIds.includes(id)) || S.albums[0];
+    const wasThumb = al.thumbId === id;
+    if (d.thumb) al.thumbId = id; else if (wasThumb) al.thumbId = al.workIds.find(x => x !== id) || null;
+    pinThumb(al); syncThumb();
+    save(); pop(); toast(d.thumb && !wasThumb ? `「${al.name}」のサムネにして、左上に移しました` : P.id ? '作品を更新しました' : `「${al.name}」に作品を追加しました`);
+  }
+  if (e.target.id === 'albumForm'){
+    const name = $('#albumName').value.trim() || `展示室${S.albums.length + 1}`;
+    const al = { id: 'a' + uid(), name, workIds: [] }; S.albums.push(al); save(); closeFx(); render();
+    push({ type:'museum', kind:'mine', view:'wall', albumId: al.id }); toast(`展示室「${name}」を作りました`); return;
   }
   if (e.target.id === 'profForm'){
     const name = $('#pname').value.trim(), handle = $('#phandle').value.trim(), bio = $('#pbio').value, er = $('#perr');
