@@ -47,6 +47,8 @@ img{display:block}
 /* ---------- headers ---------- */
 .hhead{display:flex;justify-content:space-between;align-items:flex-start;padding-top:18px;gap:12px}
 .hhead h1{font-family:var(--f-latin);font-weight:700;font-size:30px;letter-spacing:.01em;margin:0;line-height:1.1}
+.hsub{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px}
+.hsub .today{margin-top:0}
 .today{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin-top:8px}
 .today::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--lime)}
 .today b{font-family:var(--f-latin);font-variant-numeric:tabular-nums}
@@ -763,9 +765,10 @@ function viewHome(){
   const { list, today } = homeItems(); const map = UI.homeMode === 'map';
   UI.carIndex = Math.min(UI.carIndex, Math.max(0, list.length - 1));
   const unread = S.notifications.some(n => !n.read);
-  const head = `<div class="hhead"><div><h1>HOME</h1><div class="today" id="todayLbl">${today ? '今日の作品' : '最近の作品'} <b>${list.length ? (map ? list.length : UI.carIndex + 1) + ' / ' + list.length : '0'}</b></div></div>
-    <div class="hright"><button class="iconbtn" data-act="notifs" aria-label="お知らせ">${I.bell}${unread ? '<span class="dot"></span>' : ''}</button>
-      <button class="mode" role="switch" aria-checked="${map}" aria-label="地図で見る" data-act="mode"><span class="knob">${map ? I.mappin : I.phone}</span></button></div></div>`;
+  // ヘッダーはほかの画面と同じ「ARTORO」＋右上のお知らせ。その下に今日の作品の数と、作品／地図の切り替え
+  const head = `<header class="chead"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-act="notifs" aria-label="お知らせ">${I.bell}${unread ? '<span class="dot"></span>' : ''}</button></header>
+    <div class="hsub"><div class="today" id="todayLbl">${today ? '今日の作品' : '最近の作品'} <b>${list.length ? (map ? list.length : UI.carIndex + 1) + ' / ' + list.length : '0'}</b></div>
+      <button class="mode" role="switch" aria-checked="${map}" aria-label="地図で見る" data-act="mode"><span class="knob">${map ? I.mappin : I.phone}</span></button></div>`;
   if (map) return `<div class="app wrap pad-nav">${head}${mapHTML()}</div>`;
   const body = list.length ? `<div class="car" id="car">${list.map((c, i) => `<button class="car-item" data-ci="${i}" aria-label="${esc(c.work.artist.name)}さんのサムネ「${esc(c.work.title)}」／美術館へ">${frame(c.work)}</button>`).join('')}</div>
       <div id="carInfo">${infoCard(list[UI.carIndex], { enc:true })}</div>`
@@ -865,7 +868,7 @@ function viewGacha(){
   rollDay(); const cat = GACHA_CATS[UI.cat], n = S.coins.n, tap = !!UI.gPhase;
   const land = 'M20,90c18-30 52-34 70-18 10 9 4 24 20 30 22 8 30 34 12 46-20 13-46-6-62-10-22-5-48-14-40-48zM150,60c26-14 64-8 78 12 9 13-6 22-2 36 5 17 26 22 18 40-10 20-44 14-58 0-12-12-6-30-22-40-20-12-34-36-14-48zM290,120c16-12 44-10 54 6 8 13-8 26-24 30-22 5-46-20-30-36zM90,190c24-6 52 6 52 22s-30 26-50 18-24-36-2-40z';
   return `<div class="app pad-nav" style="position:relative">
-    <header class="chead shadow wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-tab="me" aria-label="マイページ">${I.user}</button></header>
+    <header class="chead shadow wrap"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-act="notifs" aria-label="お知らせ">${I.bell}${S.notifications.some(n => !n.read) ? '<span class="dot"></span>' : ''}</button></header>
     <div class="coins" aria-label="作品コイン ${n}枚">${I.coin}<span>${n}</span></div>
     <div class="wrap">
       ${tap ? `<div class="tapcall ${UI.gPhase === 'spin' ? 'hit' : ''}" id="tapcall">${UI.gPhase === 'spin' ? '…！' : '地球儀をタップ！'}</div>` : `<div class="catrow"><button class="arrow" data-act="catPrev" aria-label="前のジャンル">${I.left}</button>
