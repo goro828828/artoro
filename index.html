@@ -77,7 +77,7 @@ img{display:block}
 .frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));container-type:inline-size}
 .frame img.art{position:absolute;object-fit:cover;background:var(--bg3)}
 /* iPhoneで作品を長押しすると「共有／写真に保存／コピー」のメニューが出てしまうのを止める（長押しは並べ替えに使う） */
-.frame,.frame img,.wall .w,.car-item,.pin{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.frame,.frame img,.wall .w,.car-item,.pin{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
 .frame img.art{pointer-events:none;-webkit-user-drag:none}
 .frame svg.fr{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 /* サムネの目印（相手の美術館とマイ美術館の中だけで表示）：額縁の左上から下がる黄色いしおりに、濃い茶色の文字で「サムネ」 */
@@ -1107,24 +1107,31 @@ function bindReorder(P){
   };
   const tick = () => { if (!drag) return; const r = wall.getBoundingClientRect(), edge = 44;
     const v = px < r.left + edge ? -9 : px > r.right - edge ? 9 : 0; if (v){ wall.scrollLeft += v; place(); } raf = requestAnimationFrame(tick); };
-  wall.addEventListener('pointerdown', e => {
-    const el = e.target.closest('.w[data-wid]'); if (!el || drag || el.dataset.wid === al.thumbId) return;   // サムネは左上に固定
-    sx = px = e.clientX; sy = py = e.clientY; pressEl = el; el.classList.add('pressing');
+  // ---- 長押しの開始・移動・終了（指はタッチイベント、マウスはポインターイベントで受け取る） ----
+  // iPhoneのSafariは長押し中にポインターイベントを打ち切る（pointercancel）ことがあるため、指の操作はタッチイベントで扱う
+  const press = (el, x, y) => {
+    if (!el || drag || el.dataset.wid === al.thumbId) return;   // サムネは左上に固定
+    sx = px = x; sy = py = y; pressEl = el; el.classList.add('pressing');
     timer = setTimeout(() => { timer = null; el.classList.remove('pressing');
       drag = { el, id: el.dataset.wid, order: al.workIds.slice(), x0: px, y0: py, l0: parseFloat(el.style.left), t0: parseFloat(el.style.top), s0: wall.scrollLeft };
-      el.classList.add('lift'); wall.classList.add('dragging'); try { el.setPointerCapture(e.pointerId); } catch(_){}
-      navigator.vibrate?.(15); Sound.se('lift'); suppress = true; raf = requestAnimationFrame(tick); }, 450);
-  });
-  wall.addEventListener('pointermove', e => { px = e.clientX; py = e.clientY;
-    if (!drag){ if (timer && Math.hypot(px - sx, py - sy) > 8) cancelPress(); return; }
-    e.preventDefault(); place(); });
-  wall.addEventListener('touchmove', e => { if (drag) e.preventDefault(); }, { passive:false });
+      el.classList.add('lift'); wall.classList.add('dragging');
+      navigator.vibrate?.(15); Sound.se('lift'); suppress = true; raf = requestAnimationFrame(tick); }, 420);
+  };
+  const move = (x, y) => { px = x; py = y; if (!drag){ if (timer && Math.hypot(px - sx, py - sy) > 10) cancelPress(); return false; } place(); return true; };
   const end = () => { cancelPress(); if (!drag) return; cancelAnimationFrame(raf);
     const changed = drag.order.join() !== al.workIds.join(); al.workIds = drag.order; drag.el.classList.remove('lift'); wall.classList.remove('dragging'); drag = null;
-    Sound.se('drop'); Sound.muteFor(200);
+    Sound.se('drop'); Sound.muteFor(250); setTimeout(() => { suppress = false; }, 400);
     if (changed){ save(); toast('並び順を保存しました'); } renderPage(true); };
-  wall.addEventListener('pointerup', end); wall.addEventListener('pointercancel', end);
-  wall.addEventListener('click', e => { if (suppress){ e.stopPropagation(); e.preventDefault(); suppress = false; } }, true);
+  // 指
+  let tid = null;
+  wall.addEventListener('touchstart', e => { if (e.touches.length !== 1) { cancelPress(); return; } const t = e.changedTouches[0]; tid = t.identifier; press(e.target.closest('.w[data-wid]'), t.clientX, t.clientY); }, { passive:true });
+  wall.addEventListener('touchmove', e => { const t = [...e.changedTouches].find(x => x.identifier === tid); if (!t) return; if (move(t.clientX, t.clientY)) e.preventDefault(); }, { passive:false });
+  wall.addEventListener('touchend', end); wall.addEventListener('touchcancel', end);
+  // マウス・ペン
+  wall.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') return; press(e.target.closest('.w[data-wid]'), e.clientX, e.clientY); if (pressEl) try { pressEl.setPointerCapture(e.pointerId); } catch(_){} });
+  wall.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; if (move(e.clientX, e.clientY)) e.preventDefault(); });
+  wall.addEventListener('pointerup', e => { if (e.pointerType !== 'touch') end(); }); wall.addEventListener('pointercancel', e => { if (e.pointerType !== 'touch') end(); });
+  wall.addEventListener('click', e => { if (suppress){ e.stopPropagation(); e.preventDefault(); } }, true);
   wall.addEventListener('contextmenu', e => { if (e.target.closest('.w[data-wid]')) e.preventDefault(); });
 }
 function pageDetail(P){
