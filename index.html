@@ -74,10 +74,11 @@ img{display:block}
 .whiteout.on{opacity:1}
 
 /* ---------- frame ---------- */
-.frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28))}
+.frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));container-type:inline-size}
 .frame img.art{position:absolute;object-fit:cover;background:var(--bg3)}
 .frame svg.fr{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-.ribbon{position:absolute;width:14%;min-width:12px;max-width:34px;aspect-ratio:3/5;background:linear-gradient(90deg,#F5B01E,#FFC93F 45%,#F5B01E);clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+/* しおり型のリボンに「サムネ」を横書きで入れる。文字の大きさは額縁の幅に合わせる */
+.ribbon{position:absolute;z-index:2;padding:.4em .5em 1em;font-size:9px;font-size:clamp(6px,5.2cqw,12px);font-weight:800;line-height:1;letter-spacing:.04em;white-space:nowrap;color:#5A3D00;background:linear-gradient(90deg,#F5B01E,#FFC93F 45%,#F5B01E);clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - .6em),0 100%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 
 /* ---------- carousel ---------- */
 .car{--iw:min(60vw,272px);display:flex;align-items:center;overflow-x:auto;scroll-snap-type:x mandatory;padding:26px calc((100% - var(--iw))/2) 18px;scrollbar-width:none;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));min-height:calc(var(--iw) * 1.38)}
@@ -466,7 +467,7 @@ function frame(w, opts = {}){
   const W = 400, H = Math.round(400 * w.aspect[1] / w.aspect[0]) + 20, t = Math.min(W, H) * .11;
   return `<div class="frame" style="aspect-ratio:${W}/${H}">
     <img class="art" src="${src(w)}" alt="${esc(w.title)}" style="left:${t/W*100}%;top:${t/H*100}%;width:${(W-2*t)/W*100}%;height:${(H-2*t)/H*100}%" loading="lazy" draggable="false">
-    ${frameSVG(W, H)}${opts.ribbon ? `<span class="ribbon" style="left:${t/W*100 + 5}%;top:${t/H*100 * .55}%" role="img" aria-label="サムネ" title="サムネ"></span>` : ''}</div>`;
+    ${frameSVG(W, H)}${opts.ribbon ? `<span class="ribbon" style="left:${t/W*100 + 5}%;top:${t/H*100 * .55}%">サムネ</span>` : ''}</div>`;
 }
 
 /* ================= sample world ================= */
