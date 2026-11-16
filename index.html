@@ -517,6 +517,17 @@ const Sound = (() => {
     zoom:    t => { tone(seBus, { f: 320, t, dur: .28, glide: 1300, vol: .11, a: .01, dec: .3 }); noise(seBus, { t, dur: .3, vol: .06, type: 'bandpass', f: 500, f2: 4000, q: 2 }); },
     whoosh:  t => noise(seBus, { t, dur: .5, vol: .12, type: 'bandpass', f: 250, f2: 3000, q: 1.5 }),
     rush:    t => { [0,4,7,12,16,19].forEach((k, n) => tone(seBus, { f: mtof(72 + k), t: t + n * .05, dur: .2, type: 'triangle', vol: .07, a: .003, dec: .2 })); noise(seBus, { t, dur: .7, vol: .1, type: 'bandpass', f: 300, f2: 5000 }); },
+    // ガチャの虹：帯が伸びるのに合わせて「ビョーン」と駆け上がり、7色ぶんの音がきらめいて、最後に右上へ抜けていく
+    rainbow: t => {
+      const o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(1500, t + .55); o.frequency.exponentialRampToValueAtTime(1900, t + .9);
+      lfo.frequency.setValueAtTime(14, t); lfo.frequency.linearRampToValueAtTime(5, t + .9); lg.gain.value = 45; lfo.connect(lg); lg.connect(o.detune);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.13, t + .06); g.gain.setValueAtTime(.13, t + .5); g.gain.exponentialRampToValueAtTime(.0001, t + 1.05);
+      o.connect(g); g.connect(seBus); o.start(t); lfo.start(t); o.stop(t + 1.1); lfo.stop(t + 1.1);
+      [72,74,76,79,81,84,88].forEach((m, n) => bell(seBus, m, t + .04 + n * .075, .45, .055));
+      noise(seBus, { t, dur: .65, vol: .13, type: 'bandpass', f: 300, f2: 6000, q: 1.2 });
+      noise(seBus, { t: t + .6, dur: .5, vol: .07, type: 'bandpass', f: 6000, f2: 1800, q: 1 });
+    },
     pop:     t => { tone(seBus, { f: 240, t, dur: .18, glide: 70, vol: .3, a: .002, dec: .2 }); tone(seBus, { f: mtof(88), t, dur: .08, type: 'triangle', vol: .12, a: .002, dec: .1 }); },
     spin:    t => tone(seBus, { f: 200, t, dur: 1.1, glide: 900, type: 'sawtooth', vol: .03, a: .05, dec: 1.1, filter: 1500 }),
     sparkle: t => [84,88,91,96,100].forEach((m, n) => bell(seBus, m, t + n * .07, .5, .07)),
@@ -904,7 +915,7 @@ function rainbow(done){
   }
   el.innerHTML = `<div class="lane" style="width:${D}px;height:${D}px">${bars}</div>`;
   document.body.appendChild(el);
-  Sound.se('rush');
+  Sound.se('rainbow');
   setTimeout(done, 640);                 // 帯で画面が埋まっている間に切り替える
   setTimeout(() => el.remove(), 1400);
 }
