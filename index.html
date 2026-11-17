@@ -769,6 +769,29 @@ function encStatus(e){
             : `<div class="pickst">${I.museum}美術館から好きな作品を1点もらえます${I.chev.replace('<svg', '<svg class="chev"')}</div>`;
 }
 
+/* ================= 振動 =================
+   Android などは navigator.vibrate で振動のパターンを鳴らす。
+   iPhone の Safari は vibrate に対応していないので、iOS 18 以降で使える「スイッチ型のチェックボックスを押すと本体がコツンと鳴る」仕組みで代わりに鳴らす */
+const Haptic = (() => {
+  let lbl = null;
+  const tick = () => { if (!lbl){ const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.id = 'hapticSw'; i.tabIndex = -1; i.setAttribute('aria-hidden', 'true');
+      lbl = document.createElement('label'); lbl.htmlFor = 'hapticSw'; lbl.setAttribute('aria-hidden', 'true');
+      for (const x of [i, lbl]) x.style.cssText = 'position:fixed;left:-99px;top:0;width:1px;height:1px;opacity:0;pointer-events:none'; document.body.append(i, lbl); }
+    try { lbl.click(); } catch {} };
+  // onsets: 振動を始める時刻(ms)、lens: それぞれの長さ(ms)
+  function play(onsets, lens){
+    if (S.settings.vibe === false) return;
+    if (typeof navigator.vibrate === 'function'){ const pat = []; onsets.forEach((t, k) => { if (k) pat.push(Math.max(0, t - onsets[k-1] - lens[k-1])); pat.push(lens[k]); }); navigator.vibrate(pat); return; }
+    onsets.forEach(t => t ? setTimeout(tick, t) : tick());
+  }
+  return {
+    rainbow(){ // 帯が次々に飛ぶあいだ細かく刻み、だんだん詰めていって、画面が埋まる瞬間にドンと強く
+      play([0, 70, 135, 195, 250, 300, 345, 385, 420, 455, 490, 520, 610], [14, 14, 16, 16, 18, 18, 20, 20, 22, 22, 24, 26, 90]); },
+    tap(){ play([0], [12]); }
+  };
+})();
+window.Haptic = Haptic;
+
 /* ================= HOME ================= */
 function viewHome(){
   const { list, today } = homeItems(); const map = UI.homeMode === 'map';
@@ -959,7 +982,7 @@ function rainbow(done){
   }
   el.innerHTML = `<div class="lane" style="width:${D}px;height:${D}px">${bars}</div>`;
   document.body.appendChild(el);
-  Sound.se('rainbow');
+  Sound.se('rainbow'); Haptic.rainbow();
   setTimeout(done, 640);                 // 帯で画面が埋まっている間に切り替える
   setTimeout(() => el.remove(), 1400);
 }
@@ -1194,7 +1217,7 @@ function pageSettings(P){
       <div class="sgroup"><h3>受け取るタグ</h3><p class="help" style="margin-top:0">選んだタグの作品だけを受け取ります。何も選ばなければすべて受け取ります。</p><div class="chips">${TAGS.map(t => `<button aria-pressed="${s.receiveTags.includes(t)}" data-rtag="${esc(t)}">#${esc(t)}</button>`).join('')}</div></div>
       <p class="help">Web版ではBluetoothのすれ違いが使えないため、ホームの「すれ違いを試す」で動きを確認できます。</p>`); }
   if (p === 'location') return shell('位置情報の記録', `<div class="sgroup"><h3>すれ違った場所をどこまで記録するか</h3>${[['precise','詳細な場所','施設名と座標を記録します'],['city','エリアまで','施設名と市区町村を記録します'],['off','記録しない','場所を残さず、作品だけを受け取ります']].map(([k,l,sub]) => `<button class="radio" role="radio" aria-checked="${s.location === k}" data-loc="${k}"><span class="lbl">${l}<small>${sub}</small></span><span class="o"></span></button>`).join('')}</div><p class="help">相手にあなたの位置情報は届きません。記録はあなたのコレクションの中だけに残ります。</p>`);
-  if (p === 'sound') return shell('サウンド', `${trow(s.bgm !== false, 'tBgm', 'BGM', '画面ごとにちがう音楽が流れます')}${trow(s.se !== false, 'tSe', '効果音', 'タップ・決定・キャンセル・作品へのズームインなどの音')}
+  if (p === 'sound') return shell('サウンド', `${trow(s.bgm !== false, 'tBgm', 'BGM', '画面ごとにちがう音楽が流れます')}${trow(s.se !== false, 'tSe', '効果音', 'タップ・決定・キャンセル・作品へのズームインなどの音')}${trow(s.vibe !== false, 'tVibe', '振動', 'ガチャの虹が飛ぶときに本体が震えます（iPhoneはiOS 18以降）')}
       <div class="sgroup"><h3>音量</h3><label class="sr" for="vol">音量</label><input type="range" id="vol" class="range" min="0" max="100" value="${Math.round((s.vol ?? .7) * 100)}"></div>
       <div class="sgroup"><h3>BGMを試聴</h3>${[['settings','設定'],['home','ホーム'],['gacha','ガチャ'],['museum','マイ美術館・他人の作品']].map(([k, l]) => `<button class="radio" role="radio" aria-checked="${(UI.bgmPreview || 'settings') === k}" data-bgmprev="${k}"><span class="lbl">${l}</span><span class="o"></span></button>`).join('')}</div>
       <p class="help">ブラウザの決まりで、最初に画面をタップしたときから音が鳴ります。スマホのマナーモードでは鳴らないことがあります。</p>`);
@@ -1430,6 +1453,7 @@ document.addEventListener('click', e => {
     case 'tNotifyPass': S.settings.notifyPass = !S.settings.notifyPass; save(); renderPage(true); break;
     case 'tNotifyGacha': S.settings.notifyGacha = !S.settings.notifyGacha; save(); renderPage(true); break;
     case 'tBgm': S.settings.bgm = S.settings.bgm === false; Sound.applyVol(); save(); renderPage(true); break;
+    case 'tVibe': S.settings.vibe = S.settings.vibe === false; save(); renderPage(true); if (S.settings.vibe !== false) Haptic.tap(); break;
     case 'tSe': S.settings.se = S.settings.se === false; Sound.applyVol(); save(); renderPage(true); break;
     case 'tPrivate': S.me.private = !S.me.private; save(); renderPage(true); break;
     case 'askReset': modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgR"><h2 id="dlgR">データを初期化</h2><p>受け取った作品・マイ美術館・設定をすべて消して、最初の状態に戻します。元に戻せません。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doReset">初期化</button></div></div>`); break;
