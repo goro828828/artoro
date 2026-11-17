@@ -93,10 +93,9 @@ body.wo .home .hsub .mode{z-index:96}
 .ribbon{position:absolute;z-index:2;padding:.4em .5em 1em;font-size:9px;font-size:clamp(6px,5.2cqw,12px);font-weight:800;line-height:1;letter-spacing:.04em;white-space:nowrap;color:#5A3D00;background:linear-gradient(90deg,#F5B01E,#FFC93F 45%,#F5B01E);clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - .6em),0 100%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 
 /* ---------- carousel ---------- */
-.car{--iw:min(56vw,240px);position:relative;height:calc(var(--iw) * 1.08 + 50px);overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none;perspective:1100px;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));cursor:grab}
-.car.grab{cursor:grabbing}
-.car::after{content:"";position:absolute;left:12%;right:12%;bottom:8px;height:26px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.13),transparent);pointer-events:none}
-.car-item{position:absolute;left:50%;bottom:22px;width:var(--iw);margin-left:calc(var(--iw) / -2);display:grid;place-items:end center;transform-origin:50% 100%;will-change:transform,opacity;padding:0;backface-visibility:hidden}
+.car{--iw:min(60vw,272px);display:flex;align-items:center;overflow-x:auto;scroll-snap-type:x mandatory;padding:26px calc((100% - var(--iw))/2) 18px;scrollbar-width:none;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));min-height:calc(var(--iw) * 1.38)}
+.car::-webkit-scrollbar{display:none}
+.car-item{flex:0 0 var(--iw);scroll-snap-align:center;display:grid;place-items:center;transform-origin:center;will-change:transform;padding:0 4px}
 .car-empty{display:grid;justify-items:center;gap:12px;text-align:center;color:var(--muted);padding:60px 16px}
 
 /* ---------- info card ---------- */
@@ -868,53 +867,17 @@ function bindMap(){
 }
 function zoomOutMap(){ const map = $('#map'); if (!map) return; UI.selPin = null; map.classList.remove('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.remove('sel')); fitMap(); layoutMap(true); }
 
-/* ---------- carousel ----------
-   作品を横長の輪の上に並べ、スワイプでぐるぐる回す。手前の1枚が正面を向いて大きく、奥へ行くほど小さく暗く、少し上に下がっていく。
-   指を離したときの勢いで何枚分か回り、最後はいちばん近い作品が正面で止まる。端がなく、何周でも回せる */
+/* ---------- carousel ---------- */
 function bindCarousel(){
-  const car = $('#car'); if (!car) return; const items = [...car.children]; const { list, today } = homeItems(); const N = items.length;
-  const SLOTS = 7, STEP = Math.PI * 2 / SLOTS, EDGE = Math.min(SLOTS / 2, N / 2);   // 輪に見えるのは7枚分。それより多い作品は奥でふっと消えて、回すと順に出てくる
-  let rot = UI.carIndex, anim = null, drag = null;
-  const mod = (a, n) => ((a % n) + n) % n;
-  const radius = () => Math.min(car.clientWidth * .5, 260);
-  // 縦長も横長も同じ大きさの枠に収まるように（縦長の作品が横で巨大に見えないように）、作品ごとに縮める割合
-  const fit = items.map(it => Math.min(1, it.offsetWidth * 1.08 / Math.max(1, it.offsetHeight)));
-  const layout = () => {
-    const R = radius(), H = car.clientHeight;
-    items.forEach((it, i) => {
-      const off = mod(i - rot + N / 2, N) - N / 2;                       // 正面からいくつ離れているか（-N/2〜N/2）
-      const th = off * STEP, dep = (1 + Math.cos(th)) / 2;              // dep: 1 が正面、0 がいちばん奥
-      const fade = N === 1 ? 1 : Math.max(0, Math.min(1, (EDGE - Math.abs(off)) / .55));
-      const x = Math.sin(th) * R, y = -(1 - dep) * H * .3, sc = (.3 + .7 * Math.pow(dep, 3)) * fit[i];
-      it.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotateY(${(-Math.sin(th) * 24).toFixed(1)}deg) scale(${sc.toFixed(3)})`;
-      it.style.zIndex = Math.round(dep * 100); it.style.opacity = (N === 1 ? 1 : fade * Math.min(1, .6 + dep * .6)).toFixed(3);
-      it.firstElementChild.style.filter = dep > .97 ? '' : `brightness(${(.6 + .4 * dep).toFixed(2)}) saturate(${(.65 + .35 * dep).toFixed(2)})`;
-      it.tabIndex = Math.abs(off) < .5 ? 0 : -1; it.style.pointerEvents = (dep < .15 || fade < .5) ? 'none' : ''; it.style.visibility = fade <= 0 ? 'hidden' : '';
-    });
-    const best = mod(Math.round(rot), N);
-    if (best !== UI.carIndex){ Sound.se('poko', 0, best); UI.carIndex = best; $('#carInfo').innerHTML = infoCard(list[best], { enc:true }); $('#todayLbl').innerHTML = `${today ? '今日の作品' : '最近の作品'} <b>${best + 1} / ${N}</b>`; }
+  const car = $('#car'); if (!car) return; const items = [...car.children]; const { list, today } = homeItems();
+  const update = () => {
+    const mid = car.scrollLeft + car.clientWidth / 2; let best = 0, bd = 1e9;
+    items.forEach((it, i) => { const c = it.offsetLeft + it.offsetWidth / 2, d = (c - mid) / it.offsetWidth; const ad = Math.min(1, Math.abs(d));
+      it.style.transform = `scale(${1 - ad * .26})`; if (Math.abs(d) < bd){ bd = Math.abs(d); best = i; } });
+    if (best !== UI.carIndex){ Sound.se('poko', 0, best); UI.carIndex = best; $('#carInfo').innerHTML = infoCard(list[best], { enc:true }); $('#todayLbl').innerHTML = `${today ? '今日の作品' : '最近の作品'} <b>${best + 1} / ${list.length}</b>`; }
   };
-  const stop = () => { if (anim){ cancelAnimationFrame(anim); anim = null; } };
-  const tween = (to, ms) => { stop(); if (reduced) ms = 0; const from = rot, t0 = performance.now();
-    const f = now => { const k = ms ? Math.min(1, (now - t0) / ms) : 1, e = 1 - Math.pow(1 - k, 3); rot = from + (to - from) * e; layout(); anim = k < 1 ? requestAnimationFrame(f) : null; };
-    anim = requestAnimationFrame(f); };
-  // i 番の作品を正面へ（近いほうの向きに回る）
-  UI.carSpin = i => { const cur = Math.round(rot); const d = mod(i - cur + N / 2, N) - N / 2; tween(cur + d, 380 + 140 * Math.abs(d)); };
-  UI.carStep = d => tween(Math.round(rot) + d, 360);
-  car.addEventListener('pointerdown', e => { if (N < 2 || e.button > 0) return; stop(); drag = { x:e.clientX, y:e.clientY, r:rot, moved:false, axis:null, hist:[[performance.now(), rot]] }; });
-  car.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.axis){ if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; if (drag.axis === 'x'){ drag.moved = true; car.classList.add('grab'); try { car.setPointerCapture(e.pointerId); } catch {} } }
-    if (drag.axis !== 'x') return;
-    rot = drag.r - dx / (radius() * STEP); layout();
-    const now = performance.now(); drag.hist.push([now, rot]); while (drag.hist.length > 2 && now - drag.hist[0][0] > 90) drag.hist.shift(); });
-  const end = () => { if (!drag) return; const d = drag; drag = null; car.classList.remove('grab'); if (!d.moved) return;
-    car.dataset.dragged = '1'; setTimeout(() => delete car.dataset.dragged, 60);
-    const [t0, r0] = d.hist[0], [t1, r1] = d.hist[d.hist.length - 1]; const v = t1 > t0 ? (r1 - r0) / (t1 - t0) : 0;   // 1ミリ秒あたりに回った枚数
-    const to = Math.round(rot + Math.max(-N * 1.5, Math.min(N * 1.5, v * 420)));                                           // はじいた勢いのぶん先まで回る
-    tween(to, Math.min(1500, 340 + 150 * Math.abs(to - rot))); };
-  car.addEventListener('pointerup', end); car.addEventListener('pointercancel', end);
-  car.addEventListener('keydown', e => { if (e.key === 'ArrowRight'){ e.preventDefault(); UI.carStep(1); } else if (e.key === 'ArrowLeft'){ e.preventDefault(); UI.carStep(-1); } });
-  layout();
+  const it = items[UI.carIndex]; if (it) car.scrollLeft = it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2;
+  update(); let raf; car.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive:true });
 }
 
 /* ================= GACHA ================= */
@@ -1427,7 +1390,7 @@ function seFor(b, e){
   if (a === 'modalBg') return e.target === b ? 'cancel' : null;
   if (a === 'mode') return (b.dataset.skip || UI.modeBusy) ? null : 'modeSwitch';
   if (b.dataset.pin || b.dataset.wi !== undefined || a === 'openC' || a === 'openEnc') return 'zoom';
-  if (b.dataset.ci !== undefined) return $('#car')?.dataset.dragged ? null : +b.dataset.ci === UI.carIndex ? 'zoom' : 'tap';
+  if (b.dataset.ci !== undefined) return +b.dataset.ci === UI.carIndex ? 'zoom' : 'tap';
   if (b.getAttribute('role') === 'switch') return 'toggle';
   return 'tap';
 }
@@ -1437,8 +1400,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button, [data-act]'); if (!b) return; const d = b.dataset; const P = topPage();
   if (d.tab){ UI.pages = []; closeFx(); endGacha(); UI.tab = d.tab; render(); window.scrollTo(0,0); return; }
   if (d.ci !== undefined){ const i = +d.ci, car = $('#car'); const { list } = homeItems();
-    if (car?.dataset.dragged) return;
-    if (i !== UI.carIndex){ UI.carSpin?.(i); }
+    if (i !== UI.carIndex){ const it = car.children[i]; car.scrollTo({ left: it.offsetLeft + it.offsetWidth/2 - car.clientWidth/2, behavior: reduced ? 'auto' : 'smooth' }); }
     else openArtist(list[i].work.artist, list[i].id); return; }
   if (d.pin){ const map = $('#map'); if (map?.dataset.justDragged) return; const c = encs().find(x => x.id === d.pin);
     if (UI.selPin === d.pin) openArtist(c.work.artist, c.id);
