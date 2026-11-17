@@ -72,8 +72,12 @@ img{display:block}
 .mode[aria-checked="true"]{filter:drop-shadow(0 2px 6px rgba(74,155,245,.4))}
 .mode[aria-checked="true"]::before{left:0;background:linear-gradient(90deg,#8EC2FF,#3D8BF0)}
 .mode[aria-checked="true"] .knob{transform:translateX(34px);border-color:var(--blue)}
-.whiteout{position:fixed;inset:0;z-index:95;background:var(--cream);opacity:0;pointer-events:none;transition:opacity .28s ease}
+.whiteout{position:fixed;inset:0;z-index:95;background:#fff;opacity:0;pointer-events:none;transition:opacity .28s ease}
 .whiteout.on{opacity:1}
+/* 切り替えの白い幕の間も、ヘッダー（ARTORO・お知らせ）、今日の作品の数、タブバーは幕の上に出したままにする */
+body.wo .nav{z-index:96}
+body.wo .home .chead{z-index:96}
+body.wo .home .hsub .today{position:relative;z-index:96}
 
 /* ---------- frame ---------- */
 .frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));container-type:inline-size}
@@ -774,11 +778,11 @@ function viewHome(){
   const head = `<header class="chead"><span></span><div class="t brand">ARTORO</div><button class="iconbtn r" data-act="notifs" aria-label="お知らせ">${I.bell}${unread ? '<span class="dot"></span>' : ''}</button></header>
     <div class="hsub"><div class="today" id="todayLbl">${today ? '今日の作品' : '最近の作品'} <b>${list.length ? (map ? list.length : UI.carIndex + 1) + ' / ' + list.length : '0'}</b></div>
       <button class="mode" role="switch" aria-checked="${map}" aria-label="地図で見る" data-act="mode"><span class="knob">${map ? I.mappin : I.phone}</span></button></div>`;
-  if (map) return `<div class="app wrap pad-nav">${head}${mapHTML()}</div>`;
+  if (map) return `<div class="app wrap pad-nav home">${head}${mapHTML()}</div>`;
   const body = list.length ? `<div class="car" id="car">${list.map((c, i) => `<button class="car-item" data-ci="${i}" aria-label="${esc(c.work.artist.name)}さんのサムネ「${esc(c.work.title)}」／美術館へ">${frame(c.work)}</button>`).join('')}</div>
       <div id="carInfo">${infoCard(list[UI.carIndex], { enc:true })}</div>`
     : `<div class="car-empty">まだ誰ともすれ違っていません。<br>すれ違い通信をオンにして出かけてみましょう。</div>`;
-  return `<div class="app wrap pad-nav">${head}${body}
+  return `<div class="app wrap pad-nav home">${head}${body}
     <div class="demo"><button class="linkbtn" data-act="simulate" ${S.settings.passMode ? '' : 'disabled'}>${I.pass}${S.settings.passMode ? 'すれ違いを試す（デモ）' : 'すれ違い通信はオフです（設定で変更）'}</button></div></div>`;
 }
 
@@ -1309,7 +1313,8 @@ function simulatePass(){
 function switchMode(){
   const wo = $('#whiteout'); const go = () => { UI.homeMode = UI.homeMode === 'pass' ? 'map' : 'pass'; UI.selPin = null; render(); };
   if (reduced){ go(); return; }
-  wo.classList.add('on'); setTimeout(() => { go(); setTimeout(() => wo.classList.remove('on'), 60); }, 300);
+  document.body.classList.add('wo'); clearTimeout(switchMode.t);
+  wo.classList.add('on'); setTimeout(() => { go(); setTimeout(() => { wo.classList.remove('on'); switchMode.t = setTimeout(() => document.body.classList.remove('wo'), 300); }, 60); }, 300);
 }
 async function readImage(file){
   if (!file || !file.type.startsWith('image/')) throw new Error('画像ファイル（JPG・PNGなど）を選んでください。');
