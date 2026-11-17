@@ -357,7 +357,12 @@ img{display:block}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;padding:12px 2px}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0}
-.nrow{display:flex;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);align-items:center;width:100%;text-align:left}
+.nswipe{position:relative;overflow:hidden;border-bottom:1px solid var(--line);transition:height .25s ease,opacity .25s ease}
+.nswipe .ndel{position:absolute;top:0;right:0;bottom:0;width:84px;background:var(--coral);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.nswipe .nrow{position:relative;background:var(--bg);touch-action:pan-y;transition:transform .22s ease;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.nswipe.drag .nrow{transition:none}
+.nrow{display:flex;gap:12px;padding:12px 2px;align-items:center;width:100%;text-align:left}
+.clearall{justify-self:end;font-size:11.5px;font-weight:700;color:var(--coral);white-space:nowrap;height:40px;padding:0 2px}
 .nrow img{width:38px;height:48px;object-fit:cover;border-radius:4px;flex:none}
 .nrow div{flex:1;font-size:13px;line-height:1.4}
 .nrow span{font-size:11px;color:var(--muted);display:block}
@@ -1200,9 +1205,9 @@ function pageSettings(P){
       <div class="sgroup"><h3>ガチャと作品コイン</h3><p style="margin:0">近くにユーザーがいなくても作品と出会えるように、毎日100枚の作品コインが配られます。1枚で1回ガチャを回すと、だれかのサムネの作品がそのまま届きます。ジャンルは地球儀を左右にスワイプして選べます。</p></div>`);
   if (p === 'about') return shell('ARTOROについて', `<div class="brand-big">ARTORO</div><p style="text-align:center;color:var(--muted);margin:2px 0 18px">アートロ｜すれ違いで作品を交換するアプリ</p>
       <p>SNSでは、アルゴリズムのせいで作品が多くの人に届きにくいことがあります。ARTOROは、アルゴリズムにたよらず、すれ違った人どうしで作品を送り、受け取れる場所をつくるために生まれました。</p><dl class="kv"><dt>バージョン</dt><dd>0.2.0（Web デモ）</dd></dl>`);
-  if (p === 'notifs'){ const n = S.notifications.slice().reverse();
+  if (p === 'notifs'){ S.notifications.forEach(x => { if (!x.id) x.id = uid(); }); const n = S.notifications.slice().reverse();
     return shellBase('お知らせ', n.length ? n.map(x => { const c = S.collection.find(y => y.id === x.cid), e = x.eid && S.encounters.find(y => y.id === x.eid); const w = c?.work || e?.work;
-      return `<button class="nrow" ${c ? `data-act="openC" data-cid="${c.id}"` : e ? `data-act="openEnc" data-eid="${e.id}"` : ''}>${w ? `<img src="${src(w)}" alt="">` : ''}<div>${esc(x.text)}<span>${ago(x.at)}</span></div></button>`; }).join('') : '<div class="empty">新しいお知らせはありません。</div>'); }
+      return `<div class="nswipe" data-nid="${x.id}"><button class="ndel" data-act="delNotif" data-nid="${x.id}">削除</button><button class="nrow" ${c ? `data-act="openC" data-cid="${c.id}"` : e ? `data-act="openEnc" data-eid="${e.id}"` : ''}>${w ? `<img src="${src(w)}" alt="">` : ''}<div>${esc(x.text)}<span>${ago(x.at)}</span></div></button></div>`; }).join('') + '<p class="help">お知らせを左にスライドすると削除できます。</p>' : '<div class="empty">新しいお知らせはありません。</div>', n.length ? '<button class="clearall" data-act="askClearNotifs">すべて削除</button>' : '<span></span>'); }
   if (p === 'edit'){ const m = P.form;
     return shell('プロフィールを編集', `<div style="display:grid;justify-items:center;gap:8px;padding:8px 0 16px"><img src="${art(m.avatarSeed, 0, [1,1], 140)}" alt="" style="width:84px;height:84px;border-radius:50%"><button class="linkbtn" data-act="shuffleAv">アイコンを変える</button></div>
       <form id="profForm" style="display:grid;gap:14px" novalidate>
@@ -1241,16 +1246,50 @@ function renderPage(keep){
   host.innerHTML = P.type === 'museum' ? pageMuseum(P) : P.type === 'detail' ? pageDetail(P) : P.type === 'form' ? pageForm(P) : pageSettings(P);
   const pg = host.querySelector('.page');
   if (keep){ pg.style.animation = 'none'; if (prev) pg.scrollTop = prev; }
+  if (P.type === 'settings' && P.page === 'notifs') bindNotifSwipe(host);
   const wall = $('#wall');
   if (wall){ if (keep && prevWall) wall.scrollLeft = prevWall; const bar = $('#progBar');
     const upd = () => { const max = wall.scrollWidth - wall.clientWidth; const vis = Math.max(12, wall.clientWidth / wall.scrollWidth * 100); bar.style.width = vis + '%'; bar.style.left = (max > 0 ? wall.scrollLeft / max : 0) * (100 - vis) + '%'; };
     wall.addEventListener('scroll', upd, { passive:true }); upd(); if (P.type === 'museum' && P.kind === 'mine') bindReorder(P); }
 }
+function removeNotif(id){
+  const el = document.querySelector(`.nswipe[data-nid="${id}"]`);
+  S.notifications = S.notifications.filter(n => n.id !== id); save(); Sound.se('cancel');
+  if (!el) return renderPage(true);
+  el.style.height = el.offsetHeight + 'px'; el.querySelector('.nrow').style.transform = 'translateX(-100%)';
+  requestAnimationFrame(() => { el.style.height = '0px'; el.style.opacity = '0'; });
+  setTimeout(() => renderPage(true), 280);
+}
+function bindNotifSwipe(host){
+  const OPEN = 84; let cur = null, sx = 0, sy = 0, base = 0, dx = 0, axis = null, moved = false;
+  const rowOf = el => el.querySelector('.nrow');
+  const close = (el, except) => host.querySelectorAll('.nswipe').forEach(x => { if (x !== except){ x.classList.remove('open'); rowOf(x).style.transform = ''; } });
+  const start = (el, x, y) => { cur = el; sx = x; sy = y; base = el.classList.contains('open') ? -OPEN : 0; dx = base; axis = null; moved = false; };
+  const move = (x, y, ev) => { if (!cur) return; const mx = x - sx, my = y - sy;
+    if (!axis){ if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y'; if (axis === 'x'){ cur.classList.add('drag'); close(null, cur); } }
+    if (axis !== 'x') return; ev?.cancelable && ev.preventDefault(); moved = true;
+    dx = Math.min(0, base + mx); rowOf(cur).style.transform = `translateX(${dx}px)`; };
+  const end = () => { if (!cur) return; const el = cur; cur = null; el.classList.remove('drag');
+    if (axis !== 'x') return; const w = el.offsetWidth;
+    if (dx < -w * .5) return removeNotif(el.dataset.nid);
+    if (dx < -OPEN / 2){ el.classList.add('open'); rowOf(el).style.transform = `translateX(${-OPEN}px)`; } else { el.classList.remove('open'); rowOf(el).style.transform = ''; }
+    if (moved){ const kill = ev => { ev.stopPropagation(); ev.preventDefault(); }; el.addEventListener('click', kill, { capture:true, once:true }); setTimeout(() => el.removeEventListener('click', kill, { capture:true }), 400); } };
+  host.querySelectorAll('.nswipe').forEach(el => {
+    el.addEventListener('touchstart', e => { const t = e.touches[0]; start(el, t.clientX, t.clientY); }, { passive:true });
+    el.addEventListener('touchmove', e => { const t = e.touches[0]; move(t.clientX, t.clientY, e); }, { passive:false });
+    el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
+    el.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') return; start(el, e.clientX, e.clientY); });
+    el.querySelector('.nrow').addEventListener('click', e => { if (el.classList.contains('open')){ e.stopPropagation(); e.preventDefault(); close(); } }, { capture:true });
+  });
+  const pm = e => { if (e.pointerType !== 'touch') move(e.clientX, e.clientY, e); }, pu = e => { if (e.pointerType !== 'touch') end(); };
+  const old = bindNotifSwipe.h; if (old){ window.removeEventListener('pointermove', old[0]); window.removeEventListener('pointerup', old[1]); }
+  bindNotifSwipe.h = [pm, pu]; window.addEventListener('pointermove', pm); window.addEventListener('pointerup', pu);
+}
 const push = P => { UI.pages.push(P); renderPage(); };
 const pop = () => { UI.pages.pop(); if (UI.pages.length) renderPage(); else render(); };
 function modal(html){ $('#fx').innerHTML = `<div class="modal" data-act="modalBg">${html}</div>`; }
 function closeFx(){ $('#fx').innerHTML = ''; }
-function notify(text, c, eid){ S.notifications.push({ text, at: Date.now(), read:false, cid: c?.id, eid }); if (S.notifications.length > 40) S.notifications.shift(); }
+function notify(text, c, eid){ S.notifications.push({ id: uid(), text, at: Date.now(), read:false, cid: c?.id, eid }); if (S.notifications.length > 40) S.notifications.shift(); }
 
 /* ================= actions ================= */
 function simulatePass(){
@@ -1372,6 +1411,9 @@ document.addEventListener('click', e => {
     case 'doBlock': { const a = P.w.artist; S.blocked.push({ name:a.name, handle:a.handle }); save(); closeFx(); UI.pages = UI.pages.filter(p => p.type !== 'detail' && !(p.kind === 'artist' && p.artist.handle === a.handle)); toast(`@${a.handle} をブロックしました`); render(); break; }
     case 'modalBg': if (e.target === b) closeFx(); break;
     case 'modalCancel': closeFx(); break;
+    case 'delNotif': removeNotif(d.nid); break;
+    case 'askClearNotifs': modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgN"><h2 id="dlgN">お知らせをすべて削除</h2><p>${S.notifications.length}件のお知らせをすべて削除します。届いた作品やすれ違いの記録は消えません。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doClearNotifs">すべて削除</button></div></div>`); break;
+    case 'doClearNotifs': S.notifications = []; save(); closeFx(); toast('お知らせをすべて削除しました'); renderPage(true); break;
     case 'doDelete': {
       closeFx();
       if (P.type === 'form'){ S.myWorks = S.myWorks.filter(w => w.id !== P.id); S.albums.forEach(a => { a.workIds = a.workIds.filter(x => x !== P.id); if (a.thumbId === P.id) a.thumbId = a.workIds[0] || null; pinThumb(a); }); syncThumb(); toast('作品を削除しました'); }
