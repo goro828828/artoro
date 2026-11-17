@@ -65,19 +65,22 @@ img{display:block}
 .chead.shadow{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 
 /* ---------- mode switch (pass <-> map) ---------- */
-.mode{width:76px;height:42px;position:relative;background:none;filter:drop-shadow(0 2px 6px rgba(181,216,15,.45));transition:filter .35s}
+.mode{width:76px;height:42px;position:relative;background:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(181,216,15,.45));transition:filter .35s}
 .mode::before{content:"";position:absolute;top:7px;left:22px;width:54px;height:28px;border-radius:14px;background:linear-gradient(90deg,#A8D00A,#DDF27A);transition:left .35s cubic-bezier(.4,1.4,.5,1),background .35s}
 .mode .knob{position:absolute;top:0;left:0;width:42px;height:42px;border-radius:50%;background:#fff;border:5px solid var(--lime);box-sizing:border-box;display:grid;place-items:center;transition:transform .35s cubic-bezier(.4,1.4,.5,1),border-color .35s;box-shadow:inset 0 1px 3px rgba(0,0,0,.12)}
 .mode .knob svg{width:20px;height:20px}
 .mode[aria-checked="true"]{filter:drop-shadow(0 2px 6px rgba(74,155,245,.4))}
 .mode[aria-checked="true"]::before{left:0;background:linear-gradient(90deg,#8EC2FF,#3D8BF0)}
 .mode[aria-checked="true"] .knob{transform:translateX(34px);border-color:var(--blue)}
+.mode.drag .knob,.mode.drag::before{transition:none}
+.mode:active .knob{box-shadow:inset 0 1px 3px rgba(0,0,0,.12),0 0 0 6px rgba(0,0,0,.04)}
 .whiteout{position:fixed;inset:0;z-index:95;background:#fff;opacity:0;pointer-events:none;transition:opacity .28s ease}
 .whiteout.on{opacity:1}
 /* 切り替えの白い幕の間も、ヘッダー（ARTORO・お知らせ）、今日の作品の数、タブバーは幕の上に出したままにする */
 body.wo .nav{z-index:96}
 body.wo .home .chead{z-index:96}
 body.wo .home .hsub .today{position:relative;z-index:96}
+body.wo .home .hsub .mode{z-index:96}
 
 /* ---------- frame ---------- */
 .frame{position:relative;width:100%;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));container-type:inline-size}
@@ -1252,7 +1255,7 @@ function render(){
   $('#root').innerHTML = { home:viewHome, gacha:viewGacha, me:viewMe, settings:viewSettings }[UI.tab]();
   $('#nav').innerHTML = navHTML();
   document.querySelector('.nav').hidden = UI.tab === 'gacha' && !!UI.gPhase;   // 「地球儀をタップ！」の画面ではタブバーを出さない
-  if (UI.tab === 'home'){ UI.homeMode === 'map' ? bindMap() : bindCarousel(); }
+  if (UI.tab === 'home'){ UI.homeMode === 'map' ? bindMap() : bindCarousel(); bindModeSwitch(); }
   if (UI.tab === 'gacha') runGlobe(); else cancelAnimationFrame(globeRAF);
   renderPage();
 }
@@ -1333,11 +1336,32 @@ function simulatePass(){
   S.passLog.count += added; if (s.notifyPass) notify(`${place.name}で${added}人とすれ違いました。美術館から好きな作品を1点ずつもらえます`, null, last.id);
   UI.carIndex = 0; save(); render(); toast(`${s.location === 'off' ? '' : place.name + 'で'}${added}人とすれ違いました`);
 }
+// ふつうのトグルと同じく、押した瞬間につまみが横に滑って色とアイコンが変わり、それから画面が切り替わる
+function setModeBtn(btn, map){ if (!btn) return; btn.setAttribute('aria-checked', map); btn.querySelector('.knob').innerHTML = map ? I.mappin : I.phone; }
 function switchMode(){
-  const wo = $('#whiteout'); const go = () => { UI.homeMode = UI.homeMode === 'pass' ? 'map' : 'pass'; UI.selPin = null; render(); };
-  if (reduced){ go(); return; }
+  if (UI.modeBusy) return; UI.modeBusy = true;
+  const next = UI.homeMode === 'pass' ? 'map' : 'pass';
+  setModeBtn($('.mode'), next === 'map');
+  const wo = $('#whiteout'); const go = () => { UI.homeMode = next; UI.selPin = null; render(); };
+  if (reduced){ go(); UI.modeBusy = false; return; }
   document.body.classList.add('wo'); clearTimeout(switchMode.t);
-  wo.classList.add('on'); setTimeout(() => { go(); setTimeout(() => { wo.classList.remove('on'); switchMode.t = setTimeout(() => document.body.classList.remove('wo'), 300); }, 60); }, 300);
+  setTimeout(() => wo.classList.add('on'), 120);
+  setTimeout(() => { go(); setTimeout(() => { wo.classList.remove('on'); UI.modeBusy = false; switchMode.t = setTimeout(() => document.body.classList.remove('wo'), 300); }, 60); }, 420);
+}
+// つまみを指でつかんで左右にスライドしても切り替えられる。半分より向こうで離すと切り替わり、手前なら元に戻る
+function bindModeSwitch(){
+  const btn = $('.mode'); if (!btn) return; const knob = btn.querySelector('.knob'), MAX = 34;
+  let id = null, sx = 0, base = 0, pos = 0, moved = false;
+  btn.addEventListener('pointerdown', e => { if (UI.modeBusy) return; id = e.pointerId; sx = e.clientX; base = btn.getAttribute('aria-checked') === 'true' ? MAX : 0; pos = base; moved = false; try { btn.setPointerCapture(id); } catch {} });
+  btn.addEventListener('pointermove', e => { if (e.pointerId !== id) return; const dx = e.clientX - sx; if (!moved && Math.abs(dx) < 4) return;
+    if (!moved){ moved = true; btn.classList.add('drag'); }
+    pos = Math.max(0, Math.min(MAX, base + dx)); knob.style.transform = `translateX(${pos}px)`;
+    const on = pos > MAX / 2; btn.style.setProperty('--x', pos); btn.classList.toggle('half', on); });
+  const up = e => { if (e.pointerId !== id) return; id = null; if (!moved) return; btn.classList.remove('drag', 'half'); knob.style.transform = '';
+    const want = pos > MAX / 2, cur = base === MAX;
+    btn.dataset.skip = '1'; setTimeout(() => delete btn.dataset.skip, 350);
+    if (want !== cur){ Sound.se('modeSwitch'); switchMode(); } };
+  btn.addEventListener('pointerup', up); btn.addEventListener('pointercancel', up);
 }
 async function readImage(file){
   if (!file || !file.type.startsWith('image/')) throw new Error('画像ファイル（JPG・PNGなど）を選んでください。');
@@ -1364,7 +1388,7 @@ function seFor(b, e){
   if (['draw','doPick','doDelete','doBlock','doReset','fxMuseum','fxColl','passAlbum'].includes(a)) return 'confirm';
   if (['back','modalCancel','fxClose'].includes(a)) return 'cancel';
   if (a === 'modalBg') return e.target === b ? 'cancel' : null;
-  if (a === 'mode') return 'modeSwitch';
+  if (a === 'mode') return (b.dataset.skip || UI.modeBusy) ? null : 'modeSwitch';
   if (b.dataset.pin || b.dataset.wi !== undefined || a === 'openC' || a === 'openEnc') return 'zoom';
   if (b.dataset.ci !== undefined) return +b.dataset.ci === UI.carIndex ? 'zoom' : 'tap';
   if (b.getAttribute('role') === 'switch') return 'toggle';
@@ -1394,7 +1418,7 @@ document.addEventListener('click', e => {
   if (d.rmtag){ syncForm(); P.draft.tags = P.draft.tags.filter(t => t !== d.rmtag); renderPage(true); return; }
   switch (d.act){
     case 'back': pop(); break;
-    case 'mode': switchMode(); break;
+    case 'mode': if (b.dataset.skip) break; switchMode(); break;
     case 'simulate': simulatePass(); break;
     case 'notifs': S.notifications.forEach(n => n.read = true); save(); push({ type:'settings', page:'notifs' }); break;
     case 'catPrev': setCat(UI.cat - 1); break;
