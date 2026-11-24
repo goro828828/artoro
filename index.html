@@ -12,6 +12,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap">
 <style>
+/* Leaflet 1.9.4 (BSD-2-Clause) — inlined so the map works where outside stylesheets are blocked */
+.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; } .leaflet-container { overflow: hidden; } .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-user-drag: none; } .leaflet-tile::selection { background: transparent; } .leaflet-safari .leaflet-tile { image-rendering: -webkit-optimize-contrast; } .leaflet-safari .leaflet-tile-container { width: 1600px; height: 1600px; -webkit-transform-origin: 0 0; } .leaflet-marker-icon, .leaflet-marker-shadow { display: block; } .leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; } .leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; } .leaflet-container img.leaflet-tile { mix-blend-mode: plus-lighter; } .leaflet-container.leaflet-touch-zoom { -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; } .leaflet-container.leaflet-touch-drag { -ms-touch-action: pinch-zoom; touch-action: none; touch-action: pinch-zoom; } .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { -ms-touch-action: none; touch-action: none; } .leaflet-container { -webkit-tap-highlight-color: transparent; } .leaflet-container a { -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4); } .leaflet-tile { filter: inherit; visibility: hidden; } .leaflet-tile-loaded { visibility: inherit; } .leaflet-zoom-box { width: 0; height: 0; -moz-box-sizing: border-box; box-sizing: border-box; z-index: 800; } .leaflet-overlay-pane svg { -moz-user-select: none; } .leaflet-pane         { z-index: 400; } .leaflet-tile-pane    { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-shadow-pane  { z-index: 500; } .leaflet-marker-pane  { z-index: 600; } .leaflet-tooltip-pane   { z-index: 650; } .leaflet-popup-pane   { z-index: 700; } .leaflet-map-pane canvas { z-index: 100; } .leaflet-map-pane svg    { z-index: 200; } .leaflet-vml-shape { width: 1px; height: 1px; } .lvml { behavior: url(#default#VML); display: inline-block; position: absolute; } .leaflet-control { position: relative; z-index: 800; pointer-events: visiblePainted; pointer-events: auto; } .leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; } .leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; } .leaflet-control { float: left; clear: both; } .leaflet-right .leaflet-control { float: right; } .leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; } .leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; } .leaflet-fade-anim .leaflet-popup { opacity: 0; -webkit-transition: opacity 0.2s linear; -moz-transition: opacity 0.2s linear; transition: opacity 0.2s linear; } .leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; } .leaflet-zoom-animated { -webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; } svg.leaflet-zoom-animated { will-change: transform; } .leaflet-zoom-anim .leaflet-zoom-animated { -webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1); -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1); transition:         transform 0.25s cubic-bezier(0,0,0.25,1); } .leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { -webkit-transition: none; -moz-transition: none; transition: none; } .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; } .leaflet-interactive { cursor: pointer; } .leaflet-grab { cursor: -webkit-grab; cursor:    -moz-grab; cursor:         grab; } .leaflet-crosshair, .leaflet-crosshair .leaflet-interactive { cursor: crosshair; } .leaflet-popup-pane, .leaflet-control { cursor: auto; } .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: move; cursor: -webkit-grabbing; cursor:    -moz-grabbing; cursor:         grabbing; } .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; } .leaflet-marker-icon.leaflet-interactive, .leaflet-image-layer.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path { pointer-events: visiblePainted; pointer-events: auto; } .leaflet-container { background: #ddd; outline-offset: 1px; } .leaflet-container a { color: #0078A8; } .leaflet-zoom-box { border: 2px dotted #38f; background: rgba(255,255,255,0.5); } .leaflet-container { font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; font-size: 12px; font-size: 0.75rem; line-height: 1.5; } .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.65); border-radius: 4px; } .leaflet-bar a { background-color: #fff; border-bottom: 1px solid #ccc; width: 26px; height: 26px; line-height: 26px; display: block; text-align: center; text-decoration: none; color: black; } .leaflet-bar a, .leaflet-control-layers-toggle { background-position: 50% 50%; background-repeat: no-repeat; display: block; } .leaflet-bar a:hover, .leaflet-bar a:focus { background-color: #f4f4f4; } .leaflet-bar a:first-child { border-top-left-radius: 4px; border-top-right-radius: 4px; } .leaflet-bar a:last-child { border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-bottom: none; } .leaflet-bar a.leaflet-disabled { cursor: default; background-color: #f4f4f4; color: #bbb; } .leaflet-touch .leaflet-bar a { width: 30px; height: 30px; line-height: 30px; } .leaflet-touch .leaflet-bar a:first-child { border-top-left-radius: 2px; border-top-right-radius: 2px; } .leaflet-touch .leaflet-bar a:last-child { border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { font: bold 18px 'Lucida Console', Monaco, monospace; text-indent: 1px; } .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  { font-size: 22px; } .leaflet-control-layers { box-shadow: 0 1px 5px rgba(0,0,0,0.4); background: #fff; border-radius: 5px; } .leaflet-control-layers-toggle { background-image: url(images/layers.png); width: 36px; height: 36px; } .leaflet-retina .leaflet-control-layers-toggle { background-image: url(images/layers-2x.png); background-size: 26px 26px; } .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; } .leaflet-control-layers .leaflet-control-layers-list, .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; } .leaflet-control-layers-expanded .leaflet-control-layers-list { display: block; position: relative; } .leaflet-control-layers-expanded { padding: 6px 10px 6px 6px; color: #333; background: #fff; } .leaflet-control-layers-scrollbar { overflow-y: scroll; overflow-x: hidden; padding-right: 5px; } .leaflet-control-layers-selector { margin-top: 2px; position: relative; top: 1px; } .leaflet-control-layers label { display: block; font-size: 13px; font-size: 1.08333em; } .leaflet-control-layers-separator { height: 0; border-top: 1px solid #ddd; margin: 5px -10px 5px -6px; } .leaflet-default-icon-path { background-image: url(images/marker-icon.png); } .leaflet-container .leaflet-control-attribution { background: #fff; background: rgba(255, 255, 255, 0.8); margin: 0; } .leaflet-control-attribution, .leaflet-control-scale-line { padding: 0 5px; color: #333; line-height: 1.4; } .leaflet-control-attribution a { text-decoration: none; } .leaflet-control-attribution a:hover, .leaflet-control-attribution a:focus { text-decoration: underline; } .leaflet-attribution-flag { display: inline !important; vertical-align: baseline !important; width: 1em; height: 0.6669em; } .leaflet-left .leaflet-control-scale { margin-left: 5px; } .leaflet-bottom .leaflet-control-scale { margin-bottom: 5px; } .leaflet-control-scale-line { border: 2px solid #777; border-top: none; line-height: 1.1; padding: 2px 5px 1px; white-space: nowrap; -moz-box-sizing: border-box; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); text-shadow: 1px 1px #fff; } .leaflet-control-scale-line:not(:first-child) { border-top: 2px solid #777; border-bottom: none; margin-top: -2px; } .leaflet-control-scale-line:not(:first-child):not(:last-child) { border-bottom: 2px solid #777; } .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { box-shadow: none; } .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; } .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; } .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; } .leaflet-popup-content { margin: 13px 24px 13px 20px; line-height: 1.3; font-size: 13px; font-size: 1.08333em; min-height: 1px; } .leaflet-popup-content p { margin: 17px 0; margin: 1.3em 0; } .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; } .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; pointer-events: auto; -webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -ms-transform: rotate(45deg); transform: rotate(45deg); } .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #333; box-shadow: 0 3px 14px rgba(0,0,0,0.4); } .leaflet-container a.leaflet-popup-close-button { position: absolute; top: 0; right: 0; border: none; text-align: center; width: 24px; height: 24px; font: 16px/24px Tahoma, Verdana, sans-serif; color: #757575; text-decoration: none; background: transparent; } .leaflet-container a.leaflet-popup-close-button:hover, .leaflet-container a.leaflet-popup-close-button:focus { color: #585858; } .leaflet-popup-scrolled { overflow: auto; } .leaflet-oldie .leaflet-popup-content-wrapper { -ms-zoom: 1; } .leaflet-oldie .leaflet-popup-tip { width: 24px; margin: 0 auto; -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)"; filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678); } .leaflet-oldie .leaflet-control-zoom, .leaflet-oldie .leaflet-control-layers, .leaflet-oldie .leaflet-popup-content-wrapper, .leaflet-oldie .leaflet-popup-tip { border: 1px solid #999; } .leaflet-div-icon { background: #fff; border: 1px solid #666; } .leaflet-tooltip { position: absolute; padding: 6px; background-color: #fff; border: 1px solid #fff; border-radius: 3px; color: #222; white-space: nowrap; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); } .leaflet-tooltip.leaflet-interactive { cursor: pointer; pointer-events: auto; } .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { position: absolute; pointer-events: none; border: 6px solid transparent; background: transparent; content: ""; } .leaflet-tooltip-bottom { margin-top: 6px; } .leaflet-tooltip-top { margin-top: -6px; } .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before { left: 50%; margin-left: -6px; } .leaflet-tooltip-top:before { bottom: 0; margin-bottom: -12px; border-top-color: #fff; } .leaflet-tooltip-bottom:before { top: 0; margin-top: -12px; margin-left: -6px; border-bottom-color: #fff; } .leaflet-tooltip-left { margin-left: -6px; } .leaflet-tooltip-right { margin-left: 6px; } .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { top: 50%; margin-top: -6px; } .leaflet-tooltip-left:before { right: 0; margin-right: -12px; border-left-color: #fff; } .leaflet-tooltip-right:before { left: 0; margin-left: -12px; border-right-color: #fff; } @media print { .leaflet-control { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 /* Layout: one white phone column (max 480px) based on the Figma HOME screen; black baroque frames hold the works; floating pill tab bar.
    Deliberately single light theme, matching the Figma mock. */
 :root{
@@ -128,17 +130,34 @@ body.wo .home .hsub .mode{z-index:96}
 
 /* ---------- map ---------- */
 .map{position:relative;margin-top:14px;height:calc(100svh - 230px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:360px;max-height:640px;border-radius:22px;overflow:hidden;background:#EEF0F2;touch-action:none;user-select:none}
-.map .world{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .55s cubic-bezier(.3,.9,.3,1)}
-.map .world img{width:900px;height:1100px;max-width:none}
-.pin{position:absolute;width:74px;transform:translate(-50%,-100%);transition:transform .55s cubic-bezier(.3,.9,.3,1),opacity .3s,left .55s cubic-bezier(.3,.9,.3,1),top .55s cubic-bezier(.3,.9,.3,1);display:grid;justify-items:center;gap:8px}
-.map.dragging .world,.map.dragging .pin{transition:none}
-.pin .pdot{width:11px;height:11px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 3px rgba(255,194,52,.3)}
-.pin.sel{transform:translate(-50%,-100%) scale(1.75);z-index:5}
+.map #lmap{position:absolute;inset:0;z-index:0;background:#EEF0F2}
+.map .leaflet-container{font-family:var(--f-jp);background:#EEF0F2}
+.map .leaflet-control-attribution{font-size:9px;background:rgba(255,255,255,.8)}
+.map .leaflet-top.leaflet-right{top:52px}
+.lpin{background:none;border:0}
+.lpin .pin{pointer-events:auto}
+.pin{position:relative;width:74px;display:grid;justify-items:center;gap:6px;transform-origin:50% 100%;transition:transform .35s cubic-bezier(.3,.9,.3,1),opacity .3s;filter:drop-shadow(0 3px 5px rgba(0,0,0,.25))}
+.pin .pdot{width:11px;height:11px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 3px rgba(255,194,52,.35)}
+.pin.sel{transform:scale(1.6)}
 .map.zoomed .pin:not(.sel){opacity:0;pointer-events:none}
+.medot{display:block;width:16px;height:16px;margin:3px;border-radius:50%;background:#4A9BF5;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,155,245,.25),0 1px 4px rgba(0,0,0,.3)}
 .map .mcard{position:absolute;left:12px;right:12px;bottom:12px;z-index:8;transform:translateY(130%);transition:transform .45s cubic-bezier(.3,.9,.3,1)}
 .map.zoomed .mcard{transform:none}
-.map .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(255,255,255,.92);font-size:11px;font-weight:700;padding:4px 12px;border-radius:12px;color:#555;white-space:nowrap;transition:opacity .3s}
+.map .placechip{position:absolute;left:10px;top:10px;z-index:8;display:flex;align-items:center;gap:6px;max-width:calc(100% - 20px);background:#fff;border-radius:16px;padding:6px 10px 6px 8px;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:12px;text-align:left}
+.map .placechip svg{width:16px;height:16px;flex:none}
+.map .placechip b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.map .placechip small{color:var(--blue);font-weight:700;white-space:nowrap;font-size:10.5px}
+.map .placechip .chev{width:14px;height:14px;transform:rotate(90deg);color:#999}
+.map .hint{position:absolute;left:50%;bottom:26px;z-index:7;transform:translateX(-50%);background:rgba(255,255,255,.94);font-size:11px;font-weight:700;padding:4px 12px;border-radius:12px;color:#555;white-space:nowrap;transition:opacity .3s;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .map.zoomed .hint{opacity:0}
+.mapfail{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:12px}
+.placelist{display:grid;gap:6px;max-height:min(52vh,420px);overflow:auto;margin:4px 0 12px;text-align:left}
+.placelist button{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--bg2);font-size:13px;font-weight:700}
+.placelist button small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.placelist button[aria-checked="true"]{background:#E6F1FE;color:#1D6FD0}
+.credits{font-size:11.5px;line-height:1.7;color:#555;padding-left:18px}
+.credits li{margin-bottom:2px}
+.credits a{color:var(--blue)}
 
 /* ---------- pages (pushed screens) ---------- */
 .page{position:fixed;inset:0;z-index:40;background:var(--bg);overflow-y:auto;animation:slide .28s cubic-bezier(.2,.8,.2,1)}
@@ -205,6 +224,7 @@ body.wo .home .hsub .mode{z-index:96}
 .dialog .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dialog .row button{height:36px;border-radius:18px;background:var(--bg2);font-weight:700;font-size:13px}
 .dialog .row .del{color:var(--coral)}
+.dialog .row .ok{color:var(--blue)}
 
 /* ---------- gacha ---------- */
 .coins{position:absolute;right:0;top:66px;z-index:5;background:var(--blue);color:#fff;border-radius:18px 0 0 18px;height:34px;padding:0 14px 0 6px;display:flex;align-items:center;gap:6px;font-family:var(--f-latin);font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
@@ -397,6 +417,7 @@ body.wo .home .hsub .mode{z-index:96}
 <div class="whiteout" id="whiteout"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 /* ================= icons ================= */
 const I = {
@@ -622,7 +643,7 @@ function art(seed, style, aspect = [4,5], base = 520){
   g.globalAlpha = .06; for (let i = 0; i < 1500; i++){ g.fillStyle = r() < .5 ? '#000' : '#fff'; g.fillRect(r()*w, r()*h, 1.5, 1.5); }
   const url = c.toDataURL('image/jpeg', .86); artCache.set(key, url); return url;
 }
-const src = w => w.img || art(w.seed, w.style, w.aspect);
+const src = w => w.img || w.pic || ART[hash(String(w.seed ?? w.id)) % ART.length].f;
 
 /* ================= baroque frame ================= */
 function frameSVG(W, H){
@@ -657,24 +678,37 @@ const ARTISTS = [
 ];
 const TITLES = ['THE TOWER','午後の温室','記憶の地図','青い通り道','眠れない月','窓辺のリズム','見知らぬ駅','あたらしい季節','雨上がりの交差点','小さな惑星','夏の終わりの音','ひかりの粒','帰り道の色','遠くの灯台','紙の森','声のかたち','STRAWBERRY','FIELD','NIGHT SWIM','いちごの午後'];
 const DESCS = ['通学路で見た夕方の光を思い出しながら描きました。','色の重なりで「待ち時間」を表現しています。','旅先のスケッチを家で描き直した一枚です。','気に入っている配色で、ひたすら手を動かしました。','すれ違った誰かの記憶に残ったらうれしいです。','最近の制作テーマは「余白」です。','タロットカードをモチーフにしたシリーズの一枚です。'];
-const PLACES = [
-  {name:'東京ビッグサイト（コミケ会場）',city:'東京都江東区',lat:35.6298,lng:139.7942},{name:'京都・鴨川デルタ',city:'京都市左京区',lat:35.0302,lng:135.7718},
-  {name:'大阪・中之島',city:'大阪市北区',lat:34.6930,lng:135.4950},{name:'金沢21世紀美術館 前',city:'石川県金沢市',lat:36.5608,lng:136.6582},
-  {name:'福岡・天神地下街',city:'福岡市中央区',lat:33.5911,lng:130.3990},{name:'札幌・大通公園',city:'札幌市中央区',lat:43.0598,lng:141.3478},
-  {name:'那覇・国際通り',city:'沖縄県那覇市',lat:26.2155,lng:127.6850},{name:'渋谷駅 ハチ公口',city:'東京都渋谷区',lat:35.6590,lng:139.7006},
-  {name:'直島・宮浦港',city:'香川県直島町',lat:34.4600,lng:133.9956},{name:'大阪芸術大学 前',city:'大阪府南河内郡',lat:34.4858,lng:135.5994},
+const PLACES = [   // 実在の場所。地図はここを中心に表示する
+  {key:'bigsight',name:'東京ビッグサイト（コミケ会場）',city:'東京都江東区',lat:35.6298,lng:139.7942},{key:'kyoto',name:'京都・鴨川デルタ',city:'京都市左京区',lat:35.0302,lng:135.7718},
+  {key:'nakanoshima',name:'大阪・中之島',city:'大阪市北区',lat:34.6930,lng:135.4950},{key:'kanazawa',name:'金沢21世紀美術館 前',city:'石川県金沢市',lat:36.5608,lng:136.6582},
+  {key:'tenjin',name:'福岡・天神地下街',city:'福岡市中央区',lat:33.5911,lng:130.3990},{key:'sapporo',name:'札幌・大通公園',city:'札幌市中央区',lat:43.0598,lng:141.3478},
+  {key:'naha',name:'那覇・国際通り',city:'沖縄県那覇市',lat:26.2155,lng:127.6850},{key:'shibuya',name:'渋谷駅 ハチ公口',city:'東京都渋谷区',lat:35.6590,lng:139.7006},
+  {key:'naoshima',name:'直島・宮浦港',city:'香川県直島町',lat:34.4580,lng:133.9745},{key:'osakageidai',name:'大阪芸術大学',city:'大阪府南河内郡河南町',lat:34.5113,lng:135.6323},
 ];
-function makeWork(r = Math.random, artist, tagPool){
-  const tags = [tagPool && tagPool.length ? pick(tagPool, r) : pick(TAGS, r)];
-  for (const t of [pick(TAGS, r), 'オリジナル']) if (r() < .55 && !tags.includes(t)) tags.push(t);
-  const styles = STYLE_BY_TAG[tags[0]] || [0,1,2,3,4,5];
-  return { id: uid(), seed: Math.floor(r()*1e9), style: pick(styles, r), aspect: pick(ASPECTS, r), title: pick(TITLES, r), desc: pick(DESCS, r), tags, artist: artist || pick(ARTISTS, r), at: Date.now() - Math.floor(r()*90)*86400e3 };
+const placeOf = p => p ? (PLACES.find(x => x.key === p.key) || PLACES.find(x => x.name === p.name || p.name.startsWith(x.name)) || p) : PLACES[9];
+const ART = [{"f":"img/art/shrine.jpg","w":575,"h":720,"tags":["デジタルアート","風景"],"title":"森の祠","by":"zonked","src":"Broken Statue Shrine","url":"https://opengameart.org/content/broken-statue-shrine"},{"f":"img/art/canyon.jpg","w":720,"h":480,"tags":["デジタルアート","風景"],"title":"谷間の街","by":"zonked","src":"City in a Canyon","url":"https://opengameart.org/content/city-in-a-canyon"},{"f":"img/art/tomb.jpg","w":540,"h":720,"tags":["デジタルアート","風景"],"title":"秋の丘の石碑","by":"zonked","src":"Fantasy Tomb Scene","url":"https://opengameart.org/content/fantasy-tomb-scene"},{"f":"img/art/fog.jpg","w":720,"h":480,"tags":["デジタルアート","風景"],"title":"霧の向こう","by":"zonked","src":"Foggy Scene","url":"https://opengameart.org/content/foggy-scene"},{"f":"img/art/coldmountain.jpg","w":720,"h":540,"tags":["油彩画","風景"],"title":"冬の山脈","by":"JAP","src":"Oil painting landscapes","url":"https://opengameart.org/content/oil-painting-landscapes"},{"f":"img/art/swamp.jpg","w":720,"h":540,"tags":["油彩画","風景"],"title":"沼地の夕焼け","by":"JAP","src":"Oil painting landscapes","url":"https://opengameart.org/content/oil-painting-landscapes"},{"f":"img/art/desert.jpg","w":720,"h":540,"tags":["油彩画","風景"],"title":"砂丘と雲","by":"JAP","src":"Oil painting landscapes","url":"https://opengameart.org/content/oil-painting-landscapes"},{"f":"img/art/tower.jpg","w":720,"h":540,"tags":["油彩画","風景"],"title":"丘の上の塔","by":"JAP","src":"Oil painting landscapes","url":"https://opengameart.org/content/oil-painting-landscapes"},{"f":"img/art/meadow.jpg","w":720,"h":540,"tags":["水彩画","風景"],"title":"夏の草原","by":"bart","src":"Meadow background","url":"https://opengameart.org/content/meadow-background"},{"f":"img/art/valley.jpg","w":720,"h":480,"tags":["デジタルアート","風景"],"title":"雨の渓谷","by":"AliHamieh","src":"Fantasy RPG Background","url":"https://opengameart.org/content/fantasy-rpg-background"},{"f":"img/art/port.jpg","w":720,"h":480,"tags":["油彩画","風景"],"title":"晴れた日の港","by":"p0ss","src":"Port Hayalang on a sunny day","url":"https://opengameart.org/content/port-hayalang-on-a-sunny-day"},{"f":"img/art/room.jpg","w":719,"h":540,"tags":["イラスト"],"title":"午後の和室","by":"HachiStudio","src":"Japanese Room","url":"https://opengameart.org/content/japanese-room"},{"f":"img/art/grass.jpg","w":720,"h":540,"tags":["水彩画","風景"],"title":"風の通り道","by":"Chibizilla","src":"Fly to Freedom (background)","url":"https://opengameart.org/content/fly-to-freedom-handpainted-asset-pack"},{"f":"img/art/forest_meadow.jpg","w":720,"h":540,"tags":["写真","風景"],"title":"森のはずれ","by":"rubberduck","src":"40 game backgrounds #1","url":"https://opengameart.org/content/40-game-backgrounds-1-painted-style-and-photorealistic"},{"f":"img/art/alps.jpg","w":540,"h":720,"tags":["写真","風景"],"title":"谷の一本杉","by":"rubberduck","src":"40 game backgrounds #1","url":"https://opengameart.org/content/40-game-backgrounds-1-painted-style-and-photorealistic"},{"f":"img/art/snowforest.jpg","w":576,"h":720,"tags":["写真","風景"],"title":"雪の林","by":"rubberduck","src":"40 game backgrounds #1","url":"https://opengameart.org/content/40-game-backgrounds-1-painted-style-and-photorealistic"},{"f":"img/art/hood.jpg","w":540,"h":720,"tags":["デジタルアート","キャラクター"],"title":"フードの旅人","by":"zonked","src":"Character Portrait","url":"https://opengameart.org/content/character-portrait"},{"f":"img/art/raquel.jpg","w":451,"h":602,"tags":["水彩画","キャラクター"],"title":"空色のスカート","by":"fsvieira","src":"Raquel (The Corporation)","url":"https://opengameart.org/content/the-corporation-secretary-character"},{"f":"img/art/anime1.jpg","w":700,"h":700,"tags":["イラスト","キャラクター"],"title":"夕方の帰り道","by":"stevenburrow","src":"Anime girl and boy portraits","url":"https://opengameart.org/content/anime-girl-and-boy-portraits"},{"f":"img/art/anime2.jpg","w":720,"h":720,"tags":["イラスト","キャラクター"],"title":"草原の午後","by":"stevenburrow","src":"Anime girl and boy portraits","url":"https://opengameart.org/content/anime-girl-and-boy-portraits"},{"f":"img/art/anime3.jpg","w":720,"h":720,"tags":["イラスト","キャラクター"],"title":"港のスケッチ","by":"stevenburrow","src":"Anime girl and boy portraits","url":"https://opengameart.org/content/anime-girl-and-boy-portraits"},{"f":"img/art/anime4.jpg","w":700,"h":700,"tags":["イラスト","キャラクター"],"title":"雪山の前で","by":"stevenburrow","src":"Anime girl and boy portraits","url":"https://opengameart.org/content/anime-girl-and-boy-portraits"},{"f":"img/art/anime5.jpg","w":720,"h":720,"tags":["イラスト","キャラクター"],"title":"森で待ち合わせ","by":"stevenburrow","src":"Anime girl and boy portraits","url":"https://opengameart.org/content/anime-girl-and-boy-portraits"},{"f":"img/art/anime6.jpg","w":602,"h":602,"tags":["イラスト","キャラクター"],"title":"青空とシャツ","by":"stevenburrow","src":"Anime girl and boy portraits","url":"https://opengameart.org/content/anime-girl-and-boy-portraits"},{"f":"img/art/anime7.jpg","w":700,"h":700,"tags":["イラスト","キャラクター"],"title":"丘のうえ","by":"stevenburrow","src":"Anime girl and boy portraits","url":"https://opengameart.org/content/anime-girl-and-boy-portraits"},{"f":"img/art/vn1.jpg","w":540,"h":720,"tags":["イラスト","キャラクター"],"title":"いつもの三人・左","by":"madameberry","src":"Visual Novel Style Characters","url":"https://opengameart.org/content/visual-novel-style-characters"},{"f":"img/art/vn2.jpg","w":525,"h":700,"tags":["イラスト","キャラクター"],"title":"いつもの三人・中","by":"madameberry","src":"Visual Novel Style Characters","url":"https://opengameart.org/content/visual-novel-style-characters"},{"f":"img/art/vn3.jpg","w":540,"h":720,"tags":["イラスト","キャラクター"],"title":"いつもの三人・右","by":"madameberry","src":"Visual Novel Style Characters","url":"https://opengameart.org/content/visual-novel-style-characters"},{"f":"img/art/hachi.jpg","w":539,"h":720,"tags":["イラスト","キャラクター"],"title":"はじめまして","by":"HachiStudio","src":"Character Imageset","url":"https://opengameart.org/content/character-imageset"},{"f":"img/art/face1.jpg","w":602,"h":602,"tags":["デジタルアート","キャラクター"],"title":"赤毛の見習い剣士","by":"gamehon","src":"Fantasy Head","url":"https://opengameart.org/content/fantasy-head"},{"f":"img/art/face2.jpg","w":720,"h":720,"tags":["デジタルアート","キャラクター"],"title":"森の守り手","by":"gamehon","src":"Fantasy Head","url":"https://opengameart.org/content/fantasy-head"},{"f":"img/art/face3.jpg","w":700,"h":700,"tags":["デジタルアート","キャラクター"],"title":"金色の髪の姫","by":"gamehon","src":"Fantasy Head","url":"https://opengameart.org/content/fantasy-head"},{"f":"img/art/face4.jpg","w":700,"h":700,"tags":["デジタルアート","キャラクター"],"title":"翼の兜","by":"gamehon","src":"Fantasy Head","url":"https://opengameart.org/content/fantasy-head"},{"f":"img/art/pixelcity.jpg","w":720,"h":345,"tags":["ドット絵","デジタルアート"],"title":"ドットの街並み","by":"ansimuz","src":"Urban Landscape","url":"https://opengameart.org/content/urban-landscape"}];
+// 作品の画像は、OpenGameArt で CC0（パブリックドメイン）として公開されているイラストを使う。出典は「ARTOROについて」に一覧
+function artFor(tagPool, r){ const pool = tagPool && tagPool.length ? ART.filter(a => a.tags.some(t => tagPool.includes(t))) : ART; return pick(pool.length ? pool : ART, r); }
+function makeWork(r = Math.random, artist, tagPool, a){
+  a = a || artFor(tagPool, r); const tags = [...a.tags]; if (r() < .45 && !tags.includes('オリジナル')) tags.push('オリジナル');
+  return { id: uid(), pic: a.f, seed: Math.floor(r()*1e9), aspect: [a.w, a.h], title: a.title, desc: pick(DESCS, r), tags, artist: artist || pick(ARTISTS, r), at: Date.now() - Math.floor(r()*90)*86400e3 };
 }
-// An artist's museum: a fixed set of works; the first is their current pass thumbnail
+// An artist's museum: a fixed set of works (no repeats); the first is their current pass thumbnail
 function museumOf(artist){
-  const r = rng(hash(artist.handle)); const n = 4 + Math.floor(r()*4); const list = [];
-  for (let i = 0; i < n; i++){ const w = makeWork(r, artist); w.id = artist.handle + ':' + i; list.push(w); }
+  const r = rng(hash(artist.handle)); const n = 4 + Math.floor(r()*4); const order = ART.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  const list = [];
+  for (let i = 0; i < n; i++){ const w = makeWork(r, artist, null, ART[order[i]]); w.id = artist.handle + ':' + i; list.push(w); }
   return list;
+}
+// 以前の版で保存した作品（自動で描いた絵）を、イラストに置きかえる。美術館の作品は美術館と同じ絵にそろえる
+function migrateArt(){
+  const fix = w => { if (!w || w.img || w.pic) return;
+    const m = typeof w.id === 'string' && w.artist && w.id.startsWith(w.artist.handle + ':') ? museumOf(w.artist).find(x => x.id === w.id) : null;
+    const a = m ? null : ART[hash(String(w.seed ?? w.id)) % ART.length];
+    Object.assign(w, m ? { pic: m.pic, aspect: m.aspect, title: m.title, tags: m.tags } : { pic: a.f, aspect: [a.w, a.h], title: a.title, tags: a.tags.concat((w.tags || []).includes('オリジナル') && !a.tags.includes('オリジナル') ? ['オリジナル'] : []) }); };
+  (S.collection || []).forEach(c => fix(c.work)); (S.encounters || []).forEach(e => fix(e.work)); (S.myWorks || []).forEach(fix);
+  (S.encounters || []).forEach(e => { e.place = placeOf(e.place); });
 }
 
 /* ================= state ================= */
@@ -691,7 +725,7 @@ const GACHA_CATS = [
 function seedState(){
   // すれ違い＝相手のサムネが届く「出会い」。作品は相手の美術館で1点選んでもらう。ガチャはサムネの作品がそのまま届く。
   const now = Date.now(), collection = [], encounters = [];
-  const plan = [[0,.15],[9,.6],[2,1.4,true],[3,3],[7,5],[null,7],[1,30,true],[null,32],[4,52,true],[8,80,true],[null,100],[5,150,true],[6,220,true]];
+  const plan = [[9,.15],[9,.6],[9,1.4,true],[0,3],[9,5],[null,7],[9,30,true],[null,32],[6,52,true],[9,80,true],[null,100],[2,150,true],[0,220,true]];
   plan.forEach(([pi, hrs, picked], i) => {
     const artist = ARTISTS[i % ARTISTS.length], m = museumOf(artist), at = now - hrs*3600e3;
     if (pi === null){ collection.push({ id: uid(), source:'gacha', place:null, at, work: m[0] }); return; }
@@ -700,11 +734,7 @@ function seedState(){
   });
   return {
     me: { name:'ME', handle:'me_artoro', bio:'イラストと版画をつくっています。', avatarSeed: 99, private:false },
-    myWorks: [
-      { id: uid(), title:'放課後の踊り場', desc:'校舎の階段で見た光。', tags:['イラスト','水彩画'], seed: 4411, style: 5, aspect:[3,4], at: now - 86400e3*6 },
-      { id: uid(), title:'ふたり', desc:'友だちと撮った写真をもとに描きました。', tags:['イラスト','オリジナル'], seed: 9123, style: 0, aspect:[4,3], at: now - 86400e3*20 },
-      { id: uid(), title:'くり返し', desc:'版画の試し刷り。', tags:['版画'], seed: 3141, style: 1, aspect:[4,5], at: now - 86400e3*40 },
-    ],
+    myWorks: [['hachi','放課後のあいさつ','教室で描いたキャラクター。'],['meadow','夏の草原','水彩で描いた、近所の河原。'],['tower','丘の上の塔','油絵の練習で描いた一枚。']].map(([k, title, desc], i) => { const a = ART.find(x => x.f.endsWith('/' + k + '.jpg')); return { id: uid(), title, desc, tags: a.tags.concat(['オリジナル']), pic: a.f, aspect: [a.w, a.h], at: now - 86400e3 * [6, 20, 40][i] }; }),
     thumbId: null, collection, encounters, following: [], blocked: [], notifications: [],
     passLog: { date: todayKey(), count: 5 },
     coins: { date: todayKey(), n: COIN_DAILY },
@@ -713,6 +743,7 @@ function seedState(){
 }
 let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
 if (!S || !S.me) S = seedState();
+migrateArt(); if (!S.demoPlace) S.demoPlace = 'osakageidai';
 if (!S.myWorks.some(w => w.id === S.thumbId)) S.thumbId = S.myWorks[0]?.id || null;
 // マイ美術館は展示室（タブ）に分かれる。作品の並び順は展示室ごとに持つ
 function ensureAlbums(){
@@ -812,60 +843,72 @@ function viewHome(){
     <div class="demo"><button class="linkbtn" data-act="simulate" ${S.settings.passMode ? '' : 'disabled'}>${I.pass}${S.settings.passMode ? 'すれ違いを試す（デモ）' : 'すれ違い通信はオフです（設定で変更）'}</button></div></div>`;
 }
 
-/* ---------- map ---------- */
-let mapImg = null;
-function mapImage(){
-  if (mapImg) return mapImg;
-  const W = 900, H = 1100, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); const r = rng(77);
-  g.fillStyle = '#EDEFF2'; g.fillRect(0,0,W,H);
-  g.fillStyle = '#E3E6EA'; for (let i = 0; i < 160; i++) g.fillRect(r()*W, r()*H, 30 + r()*70, 24 + r()*60);
-  g.fillStyle = '#D9EAD9'; for (let i = 0; i < 9; i++){ const x = r()*W, y = r()*H, w = 60 + r()*120, h = 50 + r()*110; g.beginPath(); g.moveTo(x+14,y); g.arcTo(x+w,y,x+w,y+h,14); g.arcTo(x+w,y+h,x,y+h,14); g.arcTo(x,y+h,x,y,14); g.arcTo(x,y,x+w,y,14); g.fill(); }
-  g.strokeStyle = '#CCD8E6'; g.lineWidth = 46; g.lineCap = 'round'; g.beginPath(); g.moveTo(-40, H*.72); g.bezierCurveTo(W*.3, H*.58, W*.55, H*.95, W+40, H*.8); g.stroke();
-  const road = (wd, edge) => { g.lineWidth = wd + 3; g.strokeStyle = edge; g.stroke(); g.lineWidth = wd; g.strokeStyle = '#FFFFFF'; g.stroke(); };
-  for (let i = 0; i < 26; i++){ g.beginPath(); const vert = r() < .5; const p = r() * (vert ? W : H), a = (r() - .5) * .5;
-    if (vert){ g.moveTo(p, -10); g.lineTo(p + a*H, H+10); } else { g.moveTo(-10, p); g.lineTo(W+10, p + a*W); } road(5 + r()*4, '#E2E5E9'); }
-  for (let i = 0; i < 5; i++){ g.beginPath(); g.moveTo(-20, r()*H); g.bezierCurveTo(W*.3, r()*H, W*.7, r()*H, W+20, r()*H); road(14, '#D8DCE2'); }
-  for (let i = 0; i < 3; i++){ g.beginPath(); g.moveTo(r()*W, -20); g.bezierCurveTo(r()*W, H*.3, r()*W, H*.7, r()*W, H+20); road(16, '#D8DCE2'); }
-  mapImg = c.toDataURL('image/jpeg', .85); return mapImg;
-}
-const MAPV = { s:.6, x:0, y:0 };
-function pinsData(){ return encs().slice(0, 12).map((c, i) => { const r = rng(hash(c.id)); const col = (i + Math.floor(i/3)) % 3, row = Math.floor(i/3);
-  return { c, x: 170 + col*280 + (r() - .5)*90, y: 250 + row*230 + (r() - .5)*70 }; }); }
+/* ---------- map ----------
+   実在の地図。ふだんは OpenStreetMap の地図（Googleマップのように指で動かしたり、ピンチで拡大できる）を表示する。
+   地図タイルを読み込めない環境（claude.ai のページなど）では、国土地理院の地図から書き出した画像（img/map/）に切り替える。
+   「現在地」はデモで選んだ場所。そこで出会った人の作品が、出会った場所のピンとして並ぶ */
+const curPlace = () => PLACES.find(p => p.key === S.demoPlace) || PLACES[9];
+const MAP_ZOOM = 16;
+let LM = null;
+// 出会った位置：その場所のまわり（60〜320m）にちらばらせる。人ごとに毎回同じ位置になる
+function encLL(e){ const p = placeOf(e.place), r = rng(hash(e.id + ':ll')); const a = r() * Math.PI * 2, d = 60 + r() * 260;
+  return [p.lat + d * Math.sin(a) / 111320, p.lng + d * Math.cos(a) / (111320 * Math.cos(p.lat * Math.PI / 180))]; }
+function pinsData(){ const p = curPlace(); return encs().filter(e => placeOf(e.place).key === p.key).slice(0, 16); }
 function mapHTML(){
-  const sel = UI.selPin && encs().find(c => c.id === UI.selPin);
+  const p = curPlace(), pins = pinsData(), sel = UI.selPin && pins.find(c => c.id === UI.selPin);
   return `<div class="map ${sel ? 'zoomed' : ''}" id="map">
-    <div class="world" id="world"><img src="${mapImage()}" alt="" draggable="false"></div>
-    <div id="pins">${pinsData().map(p => `<button class="pin ${p.c.id === UI.selPin ? 'sel' : ''}" data-pin="${p.c.id}" data-x="${p.x}" data-y="${p.y}" aria-label="${esc(p.c.work.title)}（${esc(p.c.place.name)}）">${frame(p.c.work)}<span class="pdot"></span></button>`).join('')}</div>
-    <div class="hint">作品をタップすると近づきます</div>
+    <div id="lmap" aria-label="${esc(p.name)}周辺の地図"></div>
+    <button class="placechip" data-act="placeMenu" aria-label="現在地を変える（デモ）。いまは${esc(p.name)}">${I.pin}<b>${esc(p.name)}</b><small>場所を変える</small>${I.chev.replace('<svg', '<svg class="chev"')}</button>
+    <div class="hint">${pins.length ? '作品をタップすると近づきます' : 'ここではまだ誰ともすれ違っていません'}</div>
     <div class="mcard">${sel ? infoCard(sel, { enc:true }) : ''}</div></div>`;
 }
-function layoutMap(animate){
-  const map = $('#map'); if (!map) return;
-  const vw = map.clientWidth, vh = map.clientHeight, pins = [...map.querySelectorAll('.pin')];
-  if (!animate) map.classList.add('dragging');
-  if (UI.selPin){ const p = pins.find(b => b.dataset.pin === UI.selPin); if (p){ MAPV.s = 1.15; MAPV.x = vw/2 - p.dataset.x * MAPV.s; MAPV.y = vh*.5 - p.dataset.y * MAPV.s; } }
-  $('#world').style.transform = `translate(${MAPV.x}px,${MAPV.y}px) scale(${MAPV.s})`;
-  pins.forEach(b => { b.style.left = (MAPV.x + b.dataset.x * MAPV.s) + 'px'; b.style.top = (MAPV.y + b.dataset.y * MAPV.s) + 'px'; });
-  if (!animate) requestAnimationFrame(() => requestAnimationFrame(() => map.classList.remove('dragging')));
+function staticBounds(p){   // img/map/*.jpg の範囲：ズーム17で 1400px 四方（中心が p）
+  const n = 256 * 2 ** 17, half = 700, x = (p.lng + 180) / 360 * n, la = p.lat * Math.PI / 180, y = (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n;
+  const un = (X, Y) => [Math.atan(Math.sinh(Math.PI * (1 - 2 * Y / n))) * 180 / Math.PI, X / n * 360 - 180];
+  return [un(x - half, y + half), un(x + half, y - half)];
 }
-function fitMap(){
-  const map = $('#map'); if (!map) return; const pts = pinsData(); const vw = map.clientWidth, vh = map.clientHeight;
-  if (!pts.length){ MAPV.s = .5; MAPV.x = 0; MAPV.y = 0; return; }
-  const xs = pts.map(p => p.x), ys = pts.map(p => p.y); const bw = Math.max(...xs) - Math.min(...xs) + 160, bh = Math.max(...ys) - Math.min(...ys) + 220;
-  MAPV.s = Math.max(.38, Math.min(.9, Math.min(vw / bw, vh / bh)));
-  MAPV.x = vw/2 - (Math.min(...xs) + Math.max(...xs))/2 * MAPV.s; MAPV.y = vh/2 - ((Math.min(...ys) + Math.max(...ys))/2 - 50) * MAPV.s;
+function useStaticMap(m, p){
+  if (m._static) return; m._static = true;
+  const b = staticBounds(p);
+  L.imageOverlay(`img/map/${p.key}.jpg`, b, { attribution: '出典：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>' }).addTo(m);
+  m.setMaxBounds(L.latLngBounds(b)); m.setMinZoom(15);
 }
 function bindMap(){
-  const map = $('#map'); if (!map) return;
-  if (!UI.selPin) fitMap(); layoutMap(false);
-  let drag = null;
-  map.addEventListener('pointerdown', e => { if (UI.selPin) return; drag = { x:e.clientX, y:e.clientY, ox:MAPV.x, oy:MAPV.y, moved:false }; });
-  map.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 6){ drag.moved = true; map.classList.add('dragging'); }
-    if (drag.moved){ MAPV.x = drag.ox + dx; MAPV.y = drag.oy + dy; layoutMap(true); } });
-  const end = () => { if (drag?.moved){ map.dataset.justDragged = '1'; setTimeout(() => delete map.dataset.justDragged, 60); } drag = null; map.classList.remove('dragging'); };
-  map.addEventListener('pointerup', end); map.addEventListener('pointercancel', end); map.addEventListener('pointerleave', end);
+  const el = $('#lmap'); if (!el) return;
+  if (LM){ LM.remove(); LM = null; }
+  if (!window.L){ el.innerHTML = '<div class="mapfail">地図を読み込めませんでした。通信状態を確かめてください。</div>'; return; }
+  const p = curPlace(), map = $('#map');
+  const m = LM = L.map(el, { zoomControl:false, attributionControl:true, zoomSnap:.25, maxZoom:19, minZoom:5 }).setView([p.lat, p.lng], MAP_ZOOM);
+  m.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+  L.control.zoom({ position:'topright', zoomInTitle:'拡大', zoomOutTitle:'縮小' }).addTo(m);
+  let ok = false, errs = 0;
+  const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors' });
+  tiles.on('tileload', () => { ok = true; });
+  tiles.on('tileerror', () => { if (!ok && ++errs >= 2){ m.removeLayer(tiles); useStaticMap(m, p); } });
+  tiles.addTo(m);
+  setTimeout(() => { if (!ok && LM === m && !m._static){ m.removeLayer(tiles); useStaticMap(m, p); } }, 4000);   // 4秒たっても1枚も届かなければ切り替える
+  L.marker([p.lat, p.lng], { icon: L.divIcon({ className:'', html:'<span class="medot" title="現在地（デモ）"></span>', iconSize:[22, 22], iconAnchor:[11, 11] }), interactive:false, keyboard:false, zIndexOffset:-100 }).addTo(m);
+  m._pins = {};
+  pinsData().forEach(c => {
+    const a = c.work.aspect, h = Math.round(74 * (400 * a[1] / a[0] + 20) / 400) + 6 + 11;
+    const mk = L.marker(encLL(c), { icon: L.divIcon({ className:'lpin', iconSize:[74, h], iconAnchor:[37, h],
+      html:`<button class="pin ${c.id === UI.selPin ? 'sel' : ''}" data-pin="${c.id}" aria-label="${esc(c.work.title)}（${esc(c.place.name)}）">${frame(c.work)}<span class="pdot"></span></button>` }), interactive:false, keyboard:false }).addTo(m);
+    m._pins[c.id] = mk;
+  });
+  m.on('dragstart', () => { map.dataset.justDragged = '1'; });
+  m.on('dragend', () => setTimeout(() => delete map.dataset.justDragged, 80));
+  if (UI.selPin && m._pins[UI.selPin]) focusPin(UI.selPin, false);
 }
-function zoomOutMap(){ const map = $('#map'); if (!map) return; UI.selPin = null; map.classList.remove('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.remove('sel')); fitMap(); layoutMap(true); }
+// 選んだピンに近づく。ピンが下のカードに隠れないよう、少し上に寄せて止める
+function focusPin(id, animate = true){
+  const m = LM, mk = m?._pins[id]; if (!mk) return; const z = 18;
+  const pt = m.project(mk.getLatLng(), z).add([0, m.getSize().y * .2]);
+  const c = m.unproject(pt, z); animate && !reduced ? m.flyTo(c, z, { duration:.6 }) : m.setView(c, z, { animate:false });
+}
+function zoomOutMap(){
+  const map = $('#map'); if (!map) return; UI.selPin = null; map.classList.remove('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.remove('sel'));
+  const p = curPlace(); if (LM) reduced ? LM.setView([p.lat, p.lng], MAP_ZOOM) : LM.flyTo([p.lat, p.lng], MAP_ZOOM, { duration:.6 });
+}
 
 /* ---------- carousel ---------- */
 function bindCarousel(){
@@ -1234,7 +1277,10 @@ function pageSettings(P){
       <div class="sgroup"><h3>ホームの地図</h3><p style="margin:0">右上のスイッチで、作品を出会った場所の地図に切り替えられます。作品をタップすると近づき、もう一度タップすると相手の美術館へ移ります。</p></div>
       <div class="sgroup"><h3>ガチャと作品コイン</h3><p style="margin:0">近くにユーザーがいなくても作品と出会えるように、毎日100枚の作品コインが配られます。1枚で1回ガチャを回すと、だれかのサムネの作品がそのまま届きます。ジャンルは地球儀を左右にスワイプして選べます。</p></div>`);
   if (p === 'about') return shell('ARTOROについて', `<div class="brand-big">ARTORO</div><p style="text-align:center;color:var(--muted);margin:2px 0 18px">アートロ｜すれ違いで作品を交換するアプリ</p>
-      <p>SNSでは、アルゴリズムのせいで作品が多くの人に届きにくいことがあります。ARTOROは、アルゴリズムにたよらず、すれ違った人どうしで作品を送り、受け取れる場所をつくるために生まれました。</p><dl class="kv"><dt>バージョン</dt><dd>0.2.0（Web デモ）</dd></dl>`);
+      <p>SNSでは、アルゴリズムのせいで作品が多くの人に届きにくいことがあります。ARTOROは、アルゴリズムにたよらず、すれ違った人どうしで作品を送り、受け取れる場所をつくるために生まれました。</p><dl class="kv"><dt>バージョン</dt><dd>0.3.0（Web デモ）</dd></dl>
+      <div class="sgroup"><h3>見本の作品について</h3><p class="credits" style="padding:0">デモに出てくる作品は、OpenGameArt.org で CC0（パブリックドメイン）として公開されているイラストを、見本として使わせていただいています。作者名はデモ用の架空の名前で、実際の作者は次のかたです。</p>
+        <ul class="credits">${[...new Map(ART.map(a => [a.url, a])).values()].map(a => `<li><a href="${a.url}" target="_blank" rel="noopener">${esc(a.src)}</a>（${esc(a.by)}・CC0）</li>`).join('')}</ul></div>
+      <div class="sgroup"><h3>地図について</h3><p class="credits" style="padding:0">地図は <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> を <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> で表示しています。地図を読み込めない環境では、<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>の地理院タイル（淡色地図）を加工した画像を表示します。</p></div>`);
   if (p === 'notifs'){ S.notifications.forEach(x => { if (!x.id) x.id = uid(); }); const n = S.notifications.slice().reverse();
     return shellBase('お知らせ', n.length ? n.map(x => { const c = S.collection.find(y => y.id === x.cid), e = x.eid && S.encounters.find(y => y.id === x.eid); const w = c?.work || e?.work;
       return `<div class="nswipe" data-nid="${x.id}"><button class="ndel" data-act="delNotif" data-nid="${x.id}">削除</button><button class="nrow" ${c ? `data-act="openC" data-cid="${c.id}"` : e ? `data-act="openEnc" data-eid="${e.id}"` : ''}>${w ? `<img src="${src(w)}" alt="">` : ''}<div>${esc(x.text)}<span>${ago(x.at)}</span></div></button></div>`; }).join('') + '<p class="help">お知らせを左にスライドすると削除できます。</p>' : '<div class="empty">新しいお知らせはありません。</div>', n.length ? '<button class="clearall" data-act="askClearNotifs">すべて削除</button>' : '<span></span>'); }
@@ -1325,7 +1371,7 @@ function notify(text, c, eid){ S.notifications.push({ id: uid(), text, at: Date.
 function simulatePass(){
   const s = S.settings; rollDay();
   if (S.passLog.count >= s.dailyLimit){ toast(`今日は上限の${s.dailyLimit}人に達しました。上限は設定で変えられます。`); return; }
-  const n = Math.min(1 + Math.floor(Math.random()*2), s.dailyLimit - S.passLog.count), place = pick(PLACES); let added = 0, last;
+  const n = Math.min(1 + Math.floor(Math.random()*2), s.dailyLimit - S.passLog.count), place = curPlace(); let added = 0, last;
   for (let i = 0; i < n; i++){
     let a, tries = 0; do { a = pick(ARTISTS); tries++; } while ((isBlocked(a.handle) || (s.receiveTags.length && !museumOf(a)[0].tags.some(t => s.receiveTags.includes(t)))) && tries < 40);
     if (isBlocked(a.handle) || (s.receiveTags.length && !museumOf(a)[0].tags.some(t => s.receiveTags.includes(t)))) continue;
@@ -1404,7 +1450,7 @@ document.addEventListener('click', e => {
     else openArtist(list[i].work.artist, list[i].id); return; }
   if (d.pin){ const map = $('#map'); if (map?.dataset.justDragged) return; const c = encs().find(x => x.id === d.pin);
     if (UI.selPin === d.pin) openArtist(c.work.artist, c.id);
-    else { UI.selPin = d.pin; map.classList.add('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.toggle('sel', p.dataset.pin === d.pin)); map.querySelector('.mcard').innerHTML = infoCard(c, { enc:true }); layoutMap(true); }
+    else { UI.selPin = d.pin; map.classList.add('zoomed'); map.querySelectorAll('.pin').forEach(p => p.classList.toggle('sel', p.dataset.pin === d.pin)); map.querySelector('.mcard').innerHTML = infoCard(c, { enc:true }); focusPin(d.pin); }
     return; }
   if (d.wi !== undefined){ const x = P._works[+d.wi]; if (x.mine) openWorkForm(x.w); else push({ type:'detail', w: x.w, c: x.c || null, from: P.kind === 'artist' ? 'artist' : 'coll', enc: P.kind === 'artist' ? P._enc : null }); return; }
   if (d.ptab){ UI.ptab = d.ptab; render(); return; }
@@ -1420,6 +1466,12 @@ document.addEventListener('click', e => {
     case 'back': pop(); break;
     case 'mode': if (b.dataset.skip) break; switchMode(); break;
     case 'simulate': simulatePass(); break;
+    case 'placeMenu': { const cur = curPlace();
+      modal(`<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgPl"><h2 id="dlgPl">現在地を変える（デモ）</h2><p>実際の位置のかわりに、選んだ場所にいることにします。地図がその場所に移り、「すれ違いを試す」もその場所で起こります。</p>
+        <div class="placelist" role="radiogroup">${PLACES.map(p => `<button role="radio" aria-checked="${p.key === cur.key}" data-act="setPlace" data-key="${p.key}"><span>${esc(p.name)}<small>${esc(p.city)}</small></span>${p.key === cur.key ? '現在地' : ''}</button>`).join('')}</div>
+        <div class="row"><button data-act="modalCancel">閉じる</button><button class="ok" data-act="passHere">ここですれ違う</button></div></div>`); break; }
+    case 'setPlace': { S.demoPlace = d.key; UI.selPin = null; save(); closeFx(); render(); toast(`現在地を「${curPlace().name}」にしました（デモ）`); break; }
+    case 'passHere': closeFx(); simulatePass(); break;
     case 'notifs': S.notifications.forEach(n => n.read = true); save(); push({ type:'settings', page:'notifs' }); break;
     case 'catPrev': setCat(UI.cat - 1); break;
     case 'catNext': setCat(UI.cat + 1); break;
@@ -1481,7 +1533,7 @@ document.addEventListener('click', e => {
     case 'tSe': S.settings.se = S.settings.se === false; Sound.applyVol(); save(); renderPage(true); break;
     case 'tPrivate': S.me.private = !S.me.private; save(); renderPage(true); break;
     case 'askReset': modal(`<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgR"><h2 id="dlgR">データを初期化</h2><p>受け取った作品・マイ美術館・設定をすべて消して、最初の状態に戻します。元に戻せません。</p><div class="row"><button data-act="modalCancel">キャンセル</button><button class="del" data-act="doReset">初期化</button></div></div>`); break;
-    case 'doReset': closeFx(); S = seedState(); ensureAlbums(); save(); UI.pages = []; UI.tab = 'home'; UI.carIndex = 0; render(); toast('データを初期化しました'); break;
+    case 'doReset': closeFx(); S = seedState(); S.demoPlace = 'osakageidai'; ensureAlbums(); save(); UI.pages = []; UI.tab = 'home'; UI.carIndex = 0; render(); toast('データを初期化しました'); break;
     default:
       if (d.act?.startsWith('go:')){ if (d.act === 'go:sound') UI.bgmPreview = null; push({ type:'settings', page: d.act.slice(3) }); }
       else if (d.act?.startsWith('noop:')) toast('デモ版のため、この機能は準備中です');
