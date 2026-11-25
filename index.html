@@ -147,6 +147,10 @@ body.wo .home .hsub .mode{z-index:96}
 .map.zoomed .mcard{transform:none}
 .map .placechip{position:absolute;left:10px;top:10px;z-index:8;display:flex;align-items:center;gap:6px;max-width:calc(100% - 20px);background:#fff;border-radius:16px;padding:6px 10px 6px 8px;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:12px;text-align:left}
 .map .placechip svg{width:16px;height:16px;flex:none}
+.map .elsewhere{position:absolute;left:10px;right:60px;top:56px;z-index:8;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.map .elsewhere button{pointer-events:auto;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 6px 0 10px;border-radius:14px;background:rgba(255,255,255,.95);box-shadow:0 1px 6px rgba(0,0,0,.14);font-size:11px;font-weight:700;color:#555}
+.map .elsewhere b{color:var(--blue)}
+.map .elsewhere .chev{width:12px;height:12px;color:#aaa}
 .map .placechip b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .map .placechip small{color:var(--blue);font-weight:700;white-space:nowrap;font-size:10.5px}
 .map .placechip .chev{width:14px;height:14px;transform:rotate(90deg);color:#999}
@@ -875,14 +879,17 @@ function encLL(e, i = 0){ const p = placeOf(e.place), r = rng(hash(e.id + ':ll')
   const sp = SPOTS[p.key]; if (sp){ const q = sp[(i * 7 + hash(p.key)) % sp.length]; return [q[0] + (r() - .5) * 8e-5, q[1] + (r() - .5) * 8e-5]; }   // 道や校舎の上（±4m ほど）
   const a = r() * Math.PI * 2, d = 60 + r() * 260;
   return [p.lat + d * Math.sin(a) / 111320, p.lng + d * Math.cos(a) / (111320 * Math.cos(p.lat * Math.PI / 180))]; }
-function pinsData(){ const p = curPlace(); return encs().filter(e => placeOf(e.place).key === p.key).slice(0, 16); }
+// 地図に出すのは、作品だけの画面（ホームの一覧）と同じ作品。いま地図に出ている場所のものはピンで、ほかの場所のものは「ほかの場所」ボタンから見に行ける
+function pinsData(){ const p = curPlace(); return homeItems().list.filter(e => placeOf(e.place).key === p.key); }
+function elsewhere(){ const p = curPlace(), m = new Map(); homeItems().list.forEach(e => { const q = placeOf(e.place); if (q.key !== p.key) m.set(q.key, { p:q, n:(m.get(q.key)?.n || 0) + 1 }); }); return [...m.values()]; }
 function mapHTML(){
   const p = curPlace(), pins = pinsData(), sel = UI.selPin && pins.find(c => c.id === UI.selPin);
   return `<div class="map ${sel ? 'zoomed' : ''}" id="map">
     <div id="lmap" aria-label="${esc(p.name)}周辺の地図"></div>
     <button class="placechip" data-act="placeMenu" aria-label="現在地を変える（デモ）。いまは${esc(p.name)}">${I.pin}<b>${esc(p.name)}</b><small>場所を変える</small>${I.chev.replace('<svg', '<svg class="chev"')}</button>
     <button class="locbtn" data-act="mapHome" aria-label="現在地に戻る"><svg viewBox="0 0 24 24"><path d="M21 3 3 10.5l7.5 2.4L13 21z" fill="currentColor"/></svg></button>
-    <div class="hint">${pins.length ? '作品をタップすると近づきます' : 'ここではまだ誰ともすれ違っていません'}</div>
+    ${elsewhere().length ? `<div class="elsewhere">${elsewhere().map(o => `<button data-act="setPlace" data-view="1" data-key="${o.p.key}">${esc(o.p.name)}<b>${o.n}件</b>${I.chev.replace('<svg', '<svg class="chev"')}</button>`).join('')}</div>` : ''}
+    <div class="hint">${pins.length ? '作品をタップすると近づきます' : 'ここで出会った作品はありません'}</div>
     <div class="mcard">${sel ? infoCard(sel, { enc:true }) : ''}</div></div>`;
 }
 // お店などの種類ごとの色（iPhone のマップに近い配色）とアイコン
@@ -974,6 +981,10 @@ function bindMap(){
   setTimeout(() => { if (!ok && LM === m){ try { m.remove(); } catch {} staticMap(el, p, map); } }, 6000);
   new maplibregl.Marker({ element:meEl(), anchor:'center' }).setLngLat([p.lng, p.lat]).addTo(m);
   pinsData().forEach((c, i) => { const ll = encLL(c, i); m._pins[c.id] = new maplibregl.Marker({ element:pinEl(c), anchor:'bottom' }).setLngLat([ll[1], ll[0]]).addTo(m); });
+  // ピンが全部画面に入るように合わせる（近すぎる時は場所ごとの拡大率まで）
+  const lls = Object.values(m._pins).map(k => k.getLngLat());
+  if (lls.length && !UI.selPin){ const bb = new maplibregl.LngLatBounds([p.lng, p.lat], [p.lng, p.lat]); lls.forEach(x => bb.extend(x));
+    m.fitBounds(bb, { padding:{ top:150, bottom:90, left:50, right:50 }, maxZoom:p.zoom || MAP_ZOOM, animate:false }); }
   m.on('dragstart', () => { map.dataset.justDragged = '1'; });
   m.on('dragend', () => setTimeout(() => delete map.dataset.justDragged, 80));
   if (UI.selPin && m._pins[UI.selPin]) focusPin(UI.selPin, false);
@@ -1569,7 +1580,7 @@ document.addEventListener('click', e => {
       modal(`<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgPl"><h2 id="dlgPl">現在地を変える（デモ）</h2><p>実際の位置のかわりに、選んだ場所にいることにします。地図がその場所に移り、「すれ違いを試す」もその場所で起こります。</p>
         <div class="placelist" role="radiogroup">${PLACES.map(p => `<button role="radio" aria-checked="${p.key === cur.key}" data-act="setPlace" data-key="${p.key}"><span>${esc(p.name)}<small>${esc(p.city)}</small></span>${p.key === cur.key ? '現在地' : ''}</button>`).join('')}</div>
         <div class="row"><button data-act="modalCancel">閉じる</button><button class="ok" data-act="passHere">ここですれ違う</button></div></div>`); break; }
-    case 'setPlace': { S.demoPlace = d.key; UI.selPin = null; save(); closeFx(); render(); toast(`現在地を「${curPlace().name}」にしました（デモ）`); break; }
+    case 'setPlace': { S.demoPlace = d.key; UI.selPin = null; save(); closeFx(); render(); toast(d.view ? `「${curPlace().name}」の地図に移りました` : `現在地を「${curPlace().name}」にしました（デモ）`); break; }
     case 'passHere': closeFx(); simulatePass(); break;
     case 'mapHome': zoomOutMap(); break;
     case 'notifs': S.notifications.forEach(n => n.read = true); save(); push({ type:'settings', page:'notifs' }); break;
