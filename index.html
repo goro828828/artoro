@@ -168,7 +168,6 @@ body.wo .home .hsub .mode{z-index:96}
 .map .locbtn{position:absolute;right:10px;top:10px;z-index:8;width:40px;height:40px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);display:grid;place-items:center;color:#3E8AF2}
 .map .locbtn svg{width:20px;height:20px}
 .map .placechip{max-width:calc(100% - 70px)}
-@media (prefers-color-scheme: dark){.map .placechip,.map .locbtn{background:#2B2F38;color:#F2F4F8;box-shadow:0 2px 10px rgba(0,0,0,.4)}.map .placechip small{color:#6AA8FF}.map .locbtn{color:#6AA8FF}.map .hint{background:rgba(43,47,56,.94);color:#E5E8EE}}
 
 /* ---------- pages (pushed screens) ---------- */
 .page{position:fixed;inset:0;z-index:40;background:var(--bg);overflow-y:auto;animation:slide .28s cubic-bezier(.2,.8,.2,1)}
@@ -695,7 +694,7 @@ const PLACES = [   // 実在の場所。地図はここを中心に表示する
   {key:'nakanoshima',name:'大阪・中之島',city:'大阪市北区',lat:34.6930,lng:135.4950},{key:'kanazawa',name:'金沢21世紀美術館 前',city:'石川県金沢市',lat:36.5608,lng:136.6582},
   {key:'tenjin',name:'福岡・天神地下街',city:'福岡市中央区',lat:33.5911,lng:130.3990},{key:'sapporo',name:'札幌・大通公園',city:'札幌市中央区',lat:43.0598,lng:141.3478},
   {key:'naha',name:'那覇・国際通り',city:'沖縄県那覇市',lat:26.2155,lng:127.6850},{key:'shibuya',name:'渋谷駅 ハチ公口',city:'東京都渋谷区',lat:35.6590,lng:139.7006},
-  {key:'naoshima',name:'直島・宮浦港',city:'香川県直島町',lat:34.4580,lng:133.9745},{key:'osakageidai',name:'大阪芸術大学',city:'大阪府南河内郡河南町',lat:34.5113,lng:135.6323},
+  {key:'naoshima',name:'直島・宮浦港',city:'香川県直島町',lat:34.4580,lng:133.9745},{key:'osakageidai',name:'大阪芸術大学',city:'大阪府南河内郡河南町',lat:34.51085,lng:135.63205,zoom:16.8,img:[34.5113,135.6323]},
 ];
 const placeOf = p => p ? (PLACES.find(x => x.key === p.key) || PLACES.find(x => x.name === p.name || p.name.startsWith(x.name)) || p) : PLACES[9];
 function makeWork(r = Math.random, artist, tagPool){
@@ -860,14 +859,21 @@ function viewHome(){
 
 /* ---------- map ----------
    iPhone の「マップ」のような見た目の実在の地図。地図データは OpenStreetMap（OpenFreeMap 配信）、表示は MapLibre。
-   ふだんは明るい地図、端末がダークモードの時は紺色の地図になる。お店や公園などは、色つきの丸アイコン＋同じ色の名前で出す。
+   いつも明るい地図（iPhone のマップの昼の配色）で表示する。お店や公園などは、色つきの丸アイコン＋同じ色の名前で出す。
    この地図を表示できない環境（claude.ai のページなど）では、国土地理院の地図を書き出した画像（img/map/）に切り替える。
    「現在地」はデモで選んだ場所。そこで出会った人の作品が、出会った場所のピンとして並ぶ */
 const curPlace = () => PLACES.find(p => p.key === S.demoPlace) || PLACES[9];
 const MAP_ZOOM = 16;
 let LM = null;   // MapLibre か Leaflet（予備）の地図
+// 大阪芸大では、塚本英世記念館（博物館のある建物）から芸術劇場までの構内の道と、その両側の校舎の上で出会ったことにする
+const SPOTS = { osakageidai: [
+  [34.51196,135.630427],[34.51162,135.631259],[34.511642,135.630803],[34.511156,135.631822],[34.511333,135.631178],[34.510979,135.632036],[34.510957,135.63158],[34.510802,135.631339],
+  [34.510581,135.631983],[34.510603,135.632305],[34.510484,135.632305],[34.510139,135.631822],[34.510426,135.63268],[34.509962,135.633109],[34.510369,135.633109],[34.509741,135.632519],
+  [34.510139,135.633485],[34.511775,135.630937],[34.51173,135.631554],[34.509962,135.6315]] };
 // 出会った位置：その場所のまわり（60〜320m）にちらばらせる。人ごとに毎回同じ位置になる
-function encLL(e){ const p = placeOf(e.place), r = rng(hash(e.id + ':ll')); const a = r() * Math.PI * 2, d = 60 + r() * 260;
+function encLL(e, i = 0){ const p = placeOf(e.place), r = rng(hash(e.id + ':ll'));
+  const sp = SPOTS[p.key]; if (sp){ const q = sp[(i * 7 + hash(p.key)) % sp.length]; return [q[0] + (r() - .5) * 8e-5, q[1] + (r() - .5) * 8e-5]; }   // 道や校舎の上（±4m ほど）
+  const a = r() * Math.PI * 2, d = 60 + r() * 260;
   return [p.lat + d * Math.sin(a) / 111320, p.lng + d * Math.cos(a) / (111320 * Math.cos(p.lat * Math.PI / 180))]; }
 function pinsData(){ const p = curPlace(); return encs().filter(e => placeOf(e.place).key === p.key).slice(0, 16); }
 function mapHTML(){
@@ -879,7 +885,6 @@ function mapHTML(){
     <div class="hint">${pins.length ? '作品をタップすると近づきます' : 'ここではまだ誰ともすれ違っていません'}</div>
     <div class="mcard">${sel ? infoCard(sel, { enc:true }) : ''}</div></div>`;
 }
-const mapDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
 // お店などの種類ごとの色（iPhone のマップに近い配色）とアイコン
 const POI = [
   ['#F49A34', 'restaurant', ['restaurant','fast_food','food_court','bbq']], ['#F49A34', 'cafe', ['cafe','ice_cream','bakery']], ['#F49A34', 'bar', ['bar','beer','pub']],
@@ -897,7 +902,7 @@ const poiMatch = idx => { const ex = ['match', ['get', 'class']]; POI.forEach(p 
 function appleStyle(dark){
   const C = dark
     ? { bg:'#2D3850', bld:'#3D4A66', bldl:'#4A5878', park:'#2C5A45', water:'#1C3E78', wline:'#2A57A8', road:'#56647F', roadc:'#2D3850', major:'#6A7894', hwy:'#8C7B57', rail:'#5E6A82', txt:'#E8EDF7', txt2:'#B8C2D6', halo:'#2D3850', school:'#3A4560', hosp:'#4A3F55' }
-    : { bg:'#F3F1EC', bld:'#E4E1DB', bldl:'#D4D0C8', park:'#CDE9C3', water:'#A7D0F6', wline:'#8BBCEB', road:'#FFFFFF', roadc:'#DAD6CE', major:'#FFFFFF', hwy:'#FBD583', rail:'#C9C6C0', txt:'#3A3A3C', txt2:'#6E6E73', halo:'#FFFFFF', school:'#EFE7DA', hosp:'#F6E4E4' };
+    : { bg:'#F2F2EF', bld:'#E3E3E0', bldl:'#D3D3CF', park:'#C9E6AE', water:'#9CCFF5', wline:'#86BEEA', road:'#FFFFFF', roadc:'#D9D9D5', major:'#FFFFFF', hwy:'#D3D7DF', rail:'#C4C4C0', txt:'#3A3A3C', txt2:'#6E6E73', halo:'#FFFFFF', school:'#ECE7DE', hosp:'#F4E6E6' };
   const name = ['coalesce', ['get', 'name:ja'], ['get', 'name']];
   const W = (a, b, c) => ['interpolate', ['exponential', 1.5], ['zoom'], 12, a, 15, b, 19, c];
   const roads = (prefix, classes, w, color, casing) => [
@@ -916,8 +921,8 @@ function appleStyle(dark){
       { id:'bld', type:'fill', source:'omt', 'source-layer':'building', minzoom:14, paint:{ 'fill-color':C.bld, 'fill-outline-color':C.bldl } },
       ...roads('r-minor', ['minor','service','track'], [.5, 3, 14], C.road, C.roadc),
       ...roads('r-mid', ['tertiary','secondary'], [1, 5, 18], C.major, C.roadc),
-      ...roads('r-major', ['primary','trunk'], [1.5, 6, 22], C.major, C.roadc),
-      ...roads('r-hwy', ['motorway'], [2, 7, 24], C.hwy, dark ? '#5D5440' : '#E7B866'),
+      ...roads('r-major', ['primary'], [1.5, 6, 22], C.major, C.roadc),
+      ...roads('r-hwy', ['motorway','trunk'], [2, 7, 24], C.hwy, dark ? '#5D5440' : '#BDC3CE'),
       { id:'rail', type:'line', source:'omt', 'source-layer':'transportation', filter:['match', ['get', 'class'], ['rail','transit'], true, false], paint:{ 'line-color':C.rail, 'line-width':['interpolate', ['linear'], ['zoom'], 12, 1, 18, 3], 'line-dasharray':[3, 2] } },
       { id:'water-name', type:'symbol', source:'omt', 'source-layer':'water_name', layout:{ 'text-field':name, 'text-font':['Noto Sans Italic'], 'text-size':12 }, paint:{ 'text-color':dark ? '#8FB4F0' : '#4C82C3', 'text-halo-color':C.halo, 'text-halo-width':1 } },
       { id:'road-name', type:'symbol', source:'omt', 'source-layer':'transportation_name', minzoom:14, layout:{ 'symbol-placement':'line', 'text-field':name, 'text-font':['Noto Sans Regular'], 'text-size':11.5, 'text-rotation-alignment':'map' }, paint:{ 'text-color':C.txt2, 'text-halo-color':C.halo, 'text-halo-width':1.2 } },
@@ -937,8 +942,9 @@ async function addPoiIcons(m){
     m.addImage(id, d, { pixelRatio:2, sdf:true }); };
   POI.forEach(p => put('w-' + p[1], p[1])); put('w-dot', 'dot');
 }
-function staticBounds(p){   // img/map/*.jpg の範囲：ズーム17で 1400px 四方（中心が p）
-  const n = 256 * 2 ** 17, half = 700, x = (p.lng + 180) / 360 * n, la = p.lat * Math.PI / 180, y = (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n;
+function staticBounds(p){   // img/map/*.jpg の範囲：ズーム17で 1400px 四方（中心は p.img か p）
+  const [cla, cln] = p.img || [p.lat, p.lng];
+  const n = 256 * 2 ** 17, half = 700, x = (cln + 180) / 360 * n, la = cla * Math.PI / 180, y = (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n;
   const un = (X, Y) => [Math.atan(Math.sinh(Math.PI * (1 - 2 * Y / n))) * 180 / Math.PI, X / n * 360 - 180];
   return [un(x - half, y + half), un(x + half, y - half)];
 }
@@ -955,7 +961,7 @@ function bindMap(){
   if (!window.maplibregl) return staticMap(el, p, map);
   let m;
   try {
-    m = new maplibregl.Map({ container:el, style:appleStyle(mapDark()), center:[p.lng, p.lat], zoom:MAP_ZOOM, maxZoom:19, minZoom:4, attributionControl:false, dragRotate:false, pitchWithRotate:false,
+    m = new maplibregl.Map({ container:el, style:appleStyle(false), center:[p.lng, p.lat], zoom:p.zoom || MAP_ZOOM, maxZoom:19, minZoom:4, attributionControl:false, dragRotate:false, pitchWithRotate:false,
       localIdeographFontFamily:'"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif' });
   } catch (err){ return staticMap(el, p, map); }
   LM = m; m._kind = 'ml'; m._pins = {};
@@ -967,7 +973,7 @@ function bindMap(){
   m.on('error', () => { if (!ok && LM === m){ try { m.remove(); } catch {} staticMap(el, p, map); } });
   setTimeout(() => { if (!ok && LM === m){ try { m.remove(); } catch {} staticMap(el, p, map); } }, 6000);
   new maplibregl.Marker({ element:meEl(), anchor:'center' }).setLngLat([p.lng, p.lat]).addTo(m);
-  pinsData().forEach(c => { const ll = encLL(c); m._pins[c.id] = new maplibregl.Marker({ element:pinEl(c), anchor:'bottom' }).setLngLat([ll[1], ll[0]]).addTo(m); });
+  pinsData().forEach((c, i) => { const ll = encLL(c, i); m._pins[c.id] = new maplibregl.Marker({ element:pinEl(c), anchor:'bottom' }).setLngLat([ll[1], ll[0]]).addTo(m); });
   m.on('dragstart', () => { map.dataset.justDragged = '1'; });
   m.on('dragend', () => setTimeout(() => delete map.dataset.justDragged, 80));
   if (UI.selPin && m._pins[UI.selPin]) focusPin(UI.selPin, false);
@@ -982,8 +988,8 @@ function staticMap(el, p, map){
   m.attributionControl.setPrefix(false);
   L.imageOverlay(`img/map/${p.key}.jpg`, b, { attribution:'出典：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>' }).addTo(m);
   L.marker([p.lat, p.lng], { icon:L.divIcon({ className:'', html:meEl().outerHTML, iconSize:[22, 22], iconAnchor:[11, 11] }), interactive:false, keyboard:false }).addTo(m);
-  pinsData().forEach(c => { const e = pinEl(c), a = c.work.aspect, h = Math.round(74 * (400 * a[1] / a[0] + 20) / 400) + 6 + 11;
-    m._pins[c.id] = L.marker(encLL(c), { icon:L.divIcon({ className:'lpin', html:e.innerHTML, iconSize:[74, h], iconAnchor:[37, h] }), interactive:false, keyboard:false }).addTo(m); });
+  pinsData().forEach((c, i) => { const e = pinEl(c), a = c.work.aspect, h = Math.round(74 * (400 * a[1] / a[0] + 20) / 400) + 6 + 11;
+    m._pins[c.id] = L.marker(encLL(c, i), { icon:L.divIcon({ className:'lpin', html:e.innerHTML, iconSize:[74, h], iconAnchor:[37, h] }), interactive:false, keyboard:false }).addTo(m); });
   m.on('dragstart', () => { map.dataset.justDragged = '1'; });
   m.on('dragend', () => setTimeout(() => delete map.dataset.justDragged, 80));
   if (UI.selPin && m._pins[UI.selPin]) focusPin(UI.selPin, false);
@@ -997,7 +1003,7 @@ function focusPin(id, animate = true){
 }
 function mapHome(){
   const p = curPlace(), m = LM; if (!m) return;
-  if (m._kind === 'ml') m[reduced ? 'jumpTo' : 'flyTo']({ center:[p.lng, p.lat], zoom:MAP_ZOOM, duration:600 });
+  if (m._kind === 'ml') m[reduced ? 'jumpTo' : 'flyTo']({ center:[p.lng, p.lat], zoom:p.zoom || MAP_ZOOM, duration:600 });
   else reduced ? m.setView([p.lat, p.lng], MAP_ZOOM) : m.flyTo([p.lat, p.lng], MAP_ZOOM, { duration:.6 });
 }
 function zoomOutMap(){
