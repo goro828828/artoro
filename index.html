@@ -919,10 +919,17 @@ function probeLive(){
 function useLocalTiles(){   // gzip で小さくした地図データを、ブラウザでほどいて渡す
   if (lvtReady || !window.maplibregl?.addProtocol) return; lvtReady = true;
   maplibregl.addProtocol('lvt', async (params, ctl) => {
-    const r = await fetch(params.url.replace('lvt://', ''), { signal:ctl.signal });
-    if (!r.ok) return { data:new ArrayBuffer(0) };   // 同梱していない文字の範囲などは、空のデータで返す（タイルごと消えないように）
-    if (!params.url.endsWith('.gz')) return { data:await r.arrayBuffer() };
-    const data = 'DecompressionStream' in window ? await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : new ArrayBuffer(0);
+    const url = params.url.replace('lvt://', '');
+    let r = await fetch(url, { signal:ctl.signal }).catch(() => null), body;
+    if (r && r.ok) body = r.body;
+    else {   // claude.ai のページでは、同じデータを base64 の文字（.txt）で置いている
+      r = await fetch(url + '.txt', { signal:ctl.signal }).catch(() => null);
+      if (!r || !r.ok) return { data:new ArrayBuffer(0) };   // 同梱していない文字の範囲などは、空のデータで返す（タイルごと消えないように）
+      const bin = atob((await r.text()).trim()), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      body = new Blob([u8]).stream();
+    }
+    if (!url.endsWith('.gz')) return { data:await new Response(body).arrayBuffer() };
+    const data = 'DecompressionStream' in window ? await new Response(body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : new ArrayBuffer(0);
     return { data };
   });
 }
