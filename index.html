@@ -906,7 +906,27 @@ const POI = [
   ['#7E8794', 'post', ['post','town_hall','police','fire_station','bank','fuel','parking','toilets','information']],
 ];
 const poiMatch = idx => { const ex = ['match', ['get', 'class']]; POI.forEach(p => { ex.push(p[2], idx === 0 ? p[0] : 'w-' + p[1]); }); ex.push(idx === 0 ? '#7E8794' : 'w-dot'); return ex; };
-function appleStyle(dark){
+// アプリに同梱した地図データ（map/vt：各場所のまわり約600m）。外の地図データを読めない環境（claude.ai のページなど）でも、同じ見た目の地図を出すため
+const VT_BOUNDS = {bigsight:[139.78757,35.62441,139.80083,35.63519],kyoto:[135.76522,35.02481,135.77838,35.03559],nakanoshima:[135.48844,34.68761,135.50156,34.69839],kanazawa:[136.65149,36.55541,136.66491,36.56619],tenjin:[130.39253,33.58571,130.40547,33.59649],sapporo:[141.34042,43.05441,141.35518,43.06519],naha:[127.67899,26.21011,127.69101,26.22089],shibuya:[139.69397,35.65361,139.70723,35.66439],naoshima:[133.96796,34.45261,133.98104,34.46339],osakageidai:[135.62551,34.50546,135.63859,34.51624]};
+const appUrl = path => new URL(path, location.href).href.replace(/%7B/gi, '{').replace(/%7D/gi, '}');   // {z} などの目印は残す
+let lvtReady = false, liveMap = null;
+// 外の地図データに届くかを一度だけ確かめる（3秒で返事がなければ届かないとみなす）
+function probeLive(){
+  if (liveMap) return liveMap;
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 3000);
+  return liveMap = fetch('https://tiles.openfreemap.org/planet', { signal:ctl.signal, cache:'no-store' }).then(r => r.ok).catch(() => false).finally(() => clearTimeout(t));
+}
+function useLocalTiles(){   // gzip で小さくした地図データを、ブラウザでほどいて渡す
+  if (lvtReady || !window.maplibregl?.addProtocol) return; lvtReady = true;
+  maplibregl.addProtocol('lvt', async (params, ctl) => {
+    const r = await fetch(params.url.replace('lvt://', ''), { signal:ctl.signal });
+    if (!r.ok) return { data:new ArrayBuffer(0) };   // 同梱していない文字の範囲などは、空のデータで返す（タイルごと消えないように）
+    if (!params.url.endsWith('.gz')) return { data:await r.arrayBuffer() };
+    const data = 'DecompressionStream' in window ? await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : new ArrayBuffer(0);
+    return { data };
+  });
+}
+function appleStyle(dark, local){
   const C = dark
     ? { bg:'#2D3850', bld:'#3D4A66', bldl:'#4A5878', park:'#2C5A45', water:'#1C3E78', wline:'#2A57A8', road:'#56647F', roadc:'#2D3850', major:'#6A7894', hwy:'#8C7B57', rail:'#5E6A82', txt:'#E8EDF7', txt2:'#B8C2D6', halo:'#2D3850', school:'#3A4560', hosp:'#4A3F55' }
     : { bg:'#F2F2EF', bld:'#E3E3E0', bldl:'#D3D3CF', park:'#C9E6AE', water:'#9CCFF5', wline:'#86BEEA', road:'#FFFFFF', roadc:'#D9D9D5', major:'#FFFFFF', hwy:'#D3D7DF', rail:'#C4C4C0', txt:'#3A3A3C', txt2:'#6E6E73', halo:'#FFFFFF', school:'#ECE7DE', hosp:'#F4E6E6' };
@@ -915,8 +935,8 @@ function appleStyle(dark){
   const roads = (prefix, classes, w, color, casing) => [
     { id: prefix + '-case', type:'line', source:'omt', 'source-layer':'transportation', filter:['match', ['get', 'class'], classes, true, false], layout:{ 'line-cap':'round', 'line-join':'round' }, paint:{ 'line-color':casing, 'line-width':W(w[0] + 1, w[1] + 2, w[2] + 3) } },
     { id: prefix, type:'line', source:'omt', 'source-layer':'transportation', filter:['match', ['get', 'class'], classes, true, false], layout:{ 'line-cap':'round', 'line-join':'round' }, paint:{ 'line-color':color, 'line-width':W(...w) } }];
-  return { version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-    sources:{ omt:{ type:'vector', url:'https://tiles.openfreemap.org/planet' } },
+  return { version:8, glyphs: local ? 'lvt://' + appUrl('map/fonts/{fontstack}/{range}.pbf') : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+    sources:{ omt: local ? { type:'vector', tiles:['lvt://' + appUrl('map/vt/{z}/{x}/{y}.gz')], minzoom:14, maxzoom:14, bounds:local } : { type:'vector', url:'https://tiles.openfreemap.org/planet' } },
     layers:[
       { id:'bg', type:'background', paint:{ 'background-color':C.bg } },
       { id:'park', type:'fill', source:'omt', 'source-layer':'park', paint:{ 'fill-color':C.park } },
@@ -940,8 +960,8 @@ function appleStyle(dark){
     ] };
 }
 // アイコンは OpenFreeMap の地図記号を白く塗れる形にして使う（丸の上に白い記号）
-async function addPoiIcons(m){
-  const base = 'https://tiles.openfreemap.org/sprites/ofm_f384/ofm@2x';
+async function addPoiIcons(m, local){
+  const base = local ? appUrl('map/sprite/ofm@2x') : 'https://tiles.openfreemap.org/sprites/ofm_f384/ofm@2x';
   const [meta, img] = await Promise.all([fetch(base + '.json').then(r => r.json()), new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; i.src = base + '.png'; })]);
   const cv = document.createElement('canvas'), g = cv.getContext('2d', { willReadFrequently:true });
   const put = (id, key) => { const s = meta[key + '_11'] || meta[key]; if (!s || m.hasImage(id)) return; cv.width = s.width; cv.height = s.height; g.clearRect(0, 0, s.width, s.height); g.drawImage(img, s.x, s.y, s.width, s.height, 0, 0, s.width, s.height);
@@ -974,11 +994,17 @@ function bindMap(){
   LM = m; m._kind = 'ml'; m._pins = {};
   m.touchZoomRotate.disableRotation();
   m.addControl(new maplibregl.AttributionControl({ compact:true, customAttribution:'<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>' }), 'bottom-right');
-  let ok = false;
-  m.on('load', () => { addPoiIcons(m).catch(() => {}); el.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'); });
-  m.on('data', e => { if (e.dataType === 'source' && e.isSourceLoaded) ok = true; });
-  m.on('error', () => { if (!ok && LM === m){ try { m.remove(); } catch {} staticMap(el, p, map); } });
-  setTimeout(() => { if (!ok && LM === m){ try { m.remove(); } catch {} staticMap(el, p, map); } }, 6000);
+  // 外の地図データが届かない時は、同梱の地図データに切り替える（見た目は同じ）。それもだめな時だけ、国土地理院の画像にする
+  let ok = false, local = false;
+  const goLocal = () => { if (local || ok || LM !== m) return; const bb = VT_BOUNDS[p.key]; if (!bb){ try { m.remove(); } catch {} return staticMap(el, p, map); }
+    local = true; useLocalTiles(); m.setStyle(appleStyle(false, bb)); m.setMinZoom(14.6); m.setMaxBounds([[bb[0], bb[1]], [bb[2], bb[3]]]);
+    m.once('styledata', () => addPoiIcons(m, true).catch(() => {}));
+    setTimeout(() => { if (!ok && LM === m){ try { m.remove(); } catch {} staticMap(el, p, map); } }, 15000); };
+  m.on('load', () => { addPoiIcons(m, local).catch(() => {}); el.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'); });
+  m.on('data', e => { if (e.dataType === 'source' && e.sourceId === 'omt' && e.isSourceLoaded) ok = true; });
+  m.on('error', e => { const msg = String(e?.error?.message || e?.error || ''); if (!ok && (e.sourceId === 'omt' || /fetch|network|load|openfreemap|Failed/i.test(msg)) && !/glyph|font|sprite|image/i.test(msg)) goLocal(); });
+  probeLive().then(v => { if (!v) goLocal(); });
+  setTimeout(goLocal, 12000);   // 回線が遅い時も 12 秒は待つ
   new maplibregl.Marker({ element:meEl(), anchor:'center' }).setLngLat([p.lng, p.lat]).addTo(m);
   pinsData().forEach((c, i) => { const ll = encLL(c, i); m._pins[c.id] = new maplibregl.Marker({ element:pinEl(c), anchor:'bottom' }).setLngLat([ll[1], ll[0]]).addTo(m); });
   // ピンが全部画面に入るように合わせる（近すぎる時は場所ごとの拡大率まで）
