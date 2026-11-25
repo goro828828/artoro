@@ -147,20 +147,12 @@ body.wo .home .hsub .mode{z-index:96}
 .map.zoomed .mcard{transform:none}
 .map .placechip{position:absolute;left:10px;top:10px;z-index:8;display:flex;align-items:center;gap:6px;max-width:calc(100% - 20px);background:#fff;border-radius:16px;padding:6px 10px 6px 8px;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:12px;text-align:left}
 .map .placechip svg{width:16px;height:16px;flex:none}
-.map .elsewhere{position:absolute;left:10px;right:60px;top:56px;z-index:8;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
-.map .elsewhere button{pointer-events:auto;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 6px 0 10px;border-radius:14px;background:rgba(255,255,255,.95);box-shadow:0 1px 6px rgba(0,0,0,.14);font-size:11px;font-weight:700;color:#555}
-.map .elsewhere b{color:var(--blue)}
-.map .elsewhere .chev{width:12px;height:12px;color:#aaa}
 .map .placechip b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .map .placechip small{color:var(--blue);font-weight:700;white-space:nowrap;font-size:10.5px}
 .map .placechip .chev{width:14px;height:14px;transform:rotate(90deg);color:#999}
 .map .hint{position:absolute;left:50%;bottom:40px;z-index:7;transform:translateX(-50%);background:rgba(255,255,255,.94);font-size:11px;font-weight:700;padding:4px 12px;border-radius:12px;color:#555;white-space:nowrap;transition:opacity .3s;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .map.zoomed .hint{opacity:0}
 .mapfail{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:12px}
-.placelist{display:grid;gap:6px;max-height:min(52vh,420px);overflow:auto;margin:4px 0 12px;text-align:left}
-.placelist button{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--bg2);font-size:13px;font-weight:700}
-.placelist button small{display:block;font-weight:400;color:var(--muted);font-size:11px}
-.placelist button[aria-checked="true"]{background:#E6F1FE;color:#1D6FD0}
 .credits{font-size:11.5px;line-height:1.7;color:#555;padding-left:18px}
 .credits li{margin-bottom:2px}
 .credits a{color:var(--blue)}
@@ -693,14 +685,10 @@ const ARTISTS = [
 ];
 const TITLES = ['THE TOWER','午後の温室','記憶の地図','青い通り道','眠れない月','窓辺のリズム','見知らぬ駅','あたらしい季節','雨上がりの交差点','小さな惑星','夏の終わりの音','ひかりの粒','帰り道の色','遠くの灯台','紙の森','声のかたち','STRAWBERRY','FIELD','NIGHT SWIM','いちごの午後'];
 const DESCS = ['通学路で見た夕方の光を思い出しながら描きました。','色の重なりで「待ち時間」を表現しています。','旅先のスケッチを家で描き直した一枚です。','気に入っている配色で、ひたすら手を動かしました。','すれ違った誰かの記憶に残ったらうれしいです。','最近の制作テーマは「余白」です。','タロットカードをモチーフにしたシリーズの一枚です。'];
-const PLACES = [   // 実在の場所。地図はここを中心に表示する
-  {key:'bigsight',name:'東京ビッグサイト（コミケ会場）',city:'東京都江東区',lat:35.6298,lng:139.7942},{key:'kyoto',name:'京都・鴨川デルタ',city:'京都市左京区',lat:35.0302,lng:135.7718},
-  {key:'nakanoshima',name:'大阪・中之島',city:'大阪市北区',lat:34.6930,lng:135.4950},{key:'kanazawa',name:'金沢21世紀美術館 前',city:'石川県金沢市',lat:36.5608,lng:136.6582},
-  {key:'tenjin',name:'福岡・天神地下街',city:'福岡市中央区',lat:33.5911,lng:130.3990},{key:'sapporo',name:'札幌・大通公園',city:'札幌市中央区',lat:43.0598,lng:141.3478},
-  {key:'naha',name:'那覇・国際通り',city:'沖縄県那覇市',lat:26.2155,lng:127.6850},{key:'shibuya',name:'渋谷駅 ハチ公口',city:'東京都渋谷区',lat:35.6590,lng:139.7006},
-  {key:'naoshima',name:'直島・宮浦港',city:'香川県直島町',lat:34.4580,lng:133.9745},{key:'osakageidai',name:'大阪芸術大学',city:'大阪府南河内郡河南町',lat:34.51085,lng:135.63205,zoom:16.8,img:[34.5113,135.6323],me:[34.509498,135.632509],meName:'10号館'},
+const PLACES = [   // 展示は大阪芸術大学で行うので、場所は大阪芸大だけ
+  {key:'osakageidai',name:'大阪芸術大学',city:'大阪府南河内郡河南町',lat:34.51085,lng:135.63205,zoom:16.8,img:[34.5113,135.6323],me:[34.509498,135.632509],meName:'10号館'},
 ];
-const placeOf = p => p ? (PLACES.find(x => x.key === p.key) || PLACES.find(x => x.name === p.name || p.name.startsWith(x.name)) || p) : PLACES[9];
+const placeOf = () => PLACES[0];   // 以前のデータで別の場所になっていても、すべて大阪芸大として扱う
 function makeWork(r = Math.random, artist, tagPool){
   const tags = [tagPool && tagPool.length ? pick(tagPool, r) : pick(TAGS, r)];
   for (const t of [pick(TAGS, r), 'オリジナル']) if (r() < .55 && !tags.includes(t)) tags.push(t);
@@ -743,7 +731,7 @@ function seedState(){
   plan.forEach(([pi, hrs, picked], i) => {
     const artist = ARTISTS[i % ARTISTS.length], m = museumOf(artist), at = now - hrs*3600e3;
     if (pi === null){ collection.push({ id: uid(), source:'gacha', place:null, at, work: m[0] }); return; }
-    const e = { id: uid(), source:'pass', place: PLACES[pi], at, work: m[0], pickedId: null }; encounters.push(e);
+    const e = { id: uid(), source:'pass', place: PLACES[0], at, work: m[0], pickedId: null }; encounters.push(e);
     if (picked){ const w = m[1 + (i % (m.length - 1))]; e.pickedId = w.id; collection.push({ id: uid(), source:'pass', place: e.place, at, work: w, encId: e.id }); }
   });
   return {
@@ -761,7 +749,8 @@ function seedState(){
 }
 let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
 if (!S || !S.me) S = seedState();
-migrateArt(); if (!S.demoPlace) S.demoPlace = 'osakageidai';
+migrateArt(); S.demoPlace = 'osakageidai';
+(S.encounters || []).forEach(e => { e.place = PLACES[0]; }); (S.collection || []).forEach(c => { if (c.place) c.place = PLACES[0]; });
 if (!S.myWorks.some(w => w.id === S.thumbId)) S.thumbId = S.myWorks[0]?.id || null;
 // マイ美術館は展示室（タブ）に分かれる。作品の並び順は展示室ごとに持つ
 function ensureAlbums(){
@@ -866,7 +855,7 @@ function viewHome(){
    いつも明るい地図（iPhone のマップの昼の配色）で表示する。お店や公園などは、色つきの丸アイコン＋同じ色の名前で出す。
    この地図を表示できない環境（claude.ai のページなど）では、国土地理院の地図を書き出した画像（img/map/）に切り替える。
    「現在地」はデモで選んだ場所。そこで出会った人の作品が、出会った場所のピンとして並ぶ */
-const curPlace = () => PLACES.find(p => p.key === S.demoPlace) || PLACES[9];
+const curPlace = () => PLACES[0];
 const MAP_ZOOM = 16;
 let LM = null;   // MapLibre か Leaflet（予備）の地図
 // 大阪芸大では、塚本英世記念館（博物館のある建物）から芸術劇場までの構内の道と、その両側の校舎の上で出会ったことにする
@@ -881,14 +870,12 @@ function encLL(e, i = 0){ const p = placeOf(e.place), r = rng(hash(e.id + ':ll')
   return [p.lat + d * Math.sin(a) / 111320, p.lng + d * Math.cos(a) / (111320 * Math.cos(p.lat * Math.PI / 180))]; }
 // 地図に出すのは、作品だけの画面（ホームの一覧）と同じ作品。いま地図に出ている場所のものはピンで、ほかの場所のものは「ほかの場所」ボタンから見に行ける
 function pinsData(){ const p = curPlace(); return homeItems().list.filter(e => placeOf(e.place).key === p.key); }
-function elsewhere(){ const p = curPlace(), m = new Map(); homeItems().list.forEach(e => { const q = placeOf(e.place); if (q.key !== p.key) m.set(q.key, { p:q, n:(m.get(q.key)?.n || 0) + 1 }); }); return [...m.values()]; }
 function mapHTML(){
   const p = curPlace(), pins = pinsData(), sel = UI.selPin && pins.find(c => c.id === UI.selPin);
   return `<div class="map ${sel ? 'zoomed' : ''}" id="map">
     <div id="lmap" aria-label="${esc(p.name)}周辺の地図"></div>
-    <button class="placechip" data-act="placeMenu" aria-label="現在地を変える（デモ）。いまは${esc(p.name)}">${I.pin}<b>${esc(p.name)}</b><small>場所を変える</small>${I.chev.replace('<svg', '<svg class="chev"')}</button>
+    <div class="placechip">${I.pin}<b>${esc(p.name)}</b></div>
     <button class="locbtn" data-act="mapHome" aria-label="現在地に戻る"><svg viewBox="0 0 24 24"><path d="M21 3 3 10.5l7.5 2.4L13 21z" fill="currentColor"/></svg></button>
-    ${elsewhere().length ? `<div class="elsewhere">${elsewhere().map(o => `<button data-act="setPlace" data-view="1" data-key="${o.p.key}">${esc(o.p.name)}<b>${o.n}件</b>${I.chev.replace('<svg', '<svg class="chev"')}</button>`).join('')}</div>` : ''}
     <div class="hint">${pins.length ? '作品をタップすると近づきます' : 'ここで出会った作品はありません'}</div>
     <div class="mcard">${sel ? infoCard(sel, { enc:true }) : ''}</div></div>`;
 }
@@ -907,7 +894,7 @@ const POI = [
 ];
 const poiMatch = idx => { const ex = ['match', ['get', 'class']]; POI.forEach(p => { ex.push(p[2], idx === 0 ? p[0] : 'w-' + p[1]); }); ex.push(idx === 0 ? '#7E8794' : 'w-dot'); return ex; };
 // アプリに同梱した地図データ（map/vt：各場所のまわり約600m）。外の地図データを読めない環境（claude.ai のページなど）でも、同じ見た目の地図を出すため
-const VT_BOUNDS = {bigsight:[139.78757,35.62441,139.80083,35.63519],kyoto:[135.76522,35.02481,135.77838,35.03559],nakanoshima:[135.48844,34.68761,135.50156,34.69839],kanazawa:[136.65149,36.55541,136.66491,36.56619],tenjin:[130.39253,33.58571,130.40547,33.59649],sapporo:[141.34042,43.05441,141.35518,43.06519],naha:[127.67899,26.21011,127.69101,26.22089],shibuya:[139.69397,35.65361,139.70723,35.66439],naoshima:[133.96796,34.45261,133.98104,34.46339],osakageidai:[135.62551,34.50546,135.63859,34.51624]};
+const VT_BOUNDS = {osakageidai:[135.62551,34.50546,135.63859,34.51624]};
 const appUrl = path => new URL(path, location.href).href.replace(/%7B/gi, '{').replace(/%7D/gi, '}');   // {z} などの目印は残す
 let lvtReady = false, liveMap = null;
 // 外の地図データに届くかを一度だけ確かめる（3秒で返事がなければ届かないとみなす）
@@ -1610,12 +1597,6 @@ document.addEventListener('click', e => {
     case 'back': pop(); break;
     case 'mode': if (b.dataset.skip) break; switchMode(); break;
     case 'simulate': simulatePass(); break;
-    case 'placeMenu': { const cur = curPlace();
-      modal(`<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgPl"><h2 id="dlgPl">現在地を変える（デモ）</h2><p>実際の位置のかわりに、選んだ場所にいることにします。地図がその場所に移り、「すれ違いを試す」もその場所で起こります。</p>
-        <div class="placelist" role="radiogroup">${PLACES.map(p => `<button role="radio" aria-checked="${p.key === cur.key}" data-act="setPlace" data-key="${p.key}"><span>${esc(p.name)}<small>${esc(p.city)}</small></span>${p.key === cur.key ? '現在地' : ''}</button>`).join('')}</div>
-        <div class="row"><button data-act="modalCancel">閉じる</button><button class="ok" data-act="passHere">ここですれ違う</button></div></div>`); break; }
-    case 'setPlace': { S.demoPlace = d.key; UI.selPin = null; save(); closeFx(); render(); toast(d.view ? `「${curPlace().name}」の地図に移りました` : `現在地を「${curPlace().name}」にしました（デモ）`); break; }
-    case 'passHere': closeFx(); simulatePass(); break;
     case 'mapHome': zoomOutMap(); break;
     case 'notifs': S.notifications.forEach(n => n.read = true); save(); push({ type:'settings', page:'notifs' }); break;
     case 'catPrev': setCat(UI.cat - 1); break;
