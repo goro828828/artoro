@@ -698,7 +698,7 @@ const PLACES = [   // 実在の場所。地図はここを中心に表示する
   {key:'nakanoshima',name:'大阪・中之島',city:'大阪市北区',lat:34.6930,lng:135.4950},{key:'kanazawa',name:'金沢21世紀美術館 前',city:'石川県金沢市',lat:36.5608,lng:136.6582},
   {key:'tenjin',name:'福岡・天神地下街',city:'福岡市中央区',lat:33.5911,lng:130.3990},{key:'sapporo',name:'札幌・大通公園',city:'札幌市中央区',lat:43.0598,lng:141.3478},
   {key:'naha',name:'那覇・国際通り',city:'沖縄県那覇市',lat:26.2155,lng:127.6850},{key:'shibuya',name:'渋谷駅 ハチ公口',city:'東京都渋谷区',lat:35.6590,lng:139.7006},
-  {key:'naoshima',name:'直島・宮浦港',city:'香川県直島町',lat:34.4580,lng:133.9745},{key:'osakageidai',name:'大阪芸術大学',city:'大阪府南河内郡河南町',lat:34.51085,lng:135.63205,zoom:16.8,img:[34.5113,135.6323]},
+  {key:'naoshima',name:'直島・宮浦港',city:'香川県直島町',lat:34.4580,lng:133.9745},{key:'osakageidai',name:'大阪芸術大学',city:'大阪府南河内郡河南町',lat:34.51085,lng:135.63205,zoom:16.8,img:[34.5113,135.6323],me:[34.509498,135.632509],meName:'10号館'},
 ];
 const placeOf = p => p ? (PLACES.find(x => x.key === p.key) || PLACES.find(x => x.name === p.name || p.name.startsWith(x.name)) || p) : PLACES[9];
 function makeWork(r = Math.random, artist, tagPool){
@@ -987,7 +987,7 @@ function pinEl(c){
   b.innerHTML = `<button class="pin ${c.id === UI.selPin ? 'sel' : ''}" data-pin="${c.id}" aria-label="${esc(c.work.title)}（${esc(c.place.name)}）">${frame(c.work)}<span class="pdot"></span></button>`;
   return b;
 }
-const meEl = () => { const d = document.createElement('div'); d.className = 'mepos'; d.innerHTML = '<span class="cone"></span><span class="medot"></span>'; d.title = '現在地（デモ）'; return d; };
+const meEl = p => { const d = document.createElement('div'); d.className = 'mepos'; d.innerHTML = '<span class="cone"></span><span class="medot"></span>'; d.title = '現在地（デモ）' + (p?.meName ? '：' + p.meName : ''); return d; };
 function bindMap(){
   const el = $('#lmap'); if (!el) return;
   if (LM){ try { LM.remove(); } catch {} LM = null; }
@@ -1012,11 +1012,12 @@ function bindMap(){
   m.on('error', e => { const msg = String(e?.error?.message || e?.error || ''); if (!ok && (e.sourceId === 'omt' || /fetch|network|load|openfreemap|Failed/i.test(msg)) && !/glyph|font|sprite|image/i.test(msg)) goLocal(); });
   probeLive().then(v => { if (!v) goLocal(); });
   setTimeout(goLocal, 12000);   // 回線が遅い時も 12 秒は待つ
-  new maplibregl.Marker({ element:meEl(), anchor:'center' }).setLngLat([p.lng, p.lat]).addTo(m);
+  const me = p.me || [p.lat, p.lng];   // 自分の位置（大阪芸大では10号館）
+  new maplibregl.Marker({ element:meEl(p), anchor:'center' }).setLngLat([me[1], me[0]]).addTo(m);
   pinsData().forEach((c, i) => { const ll = encLL(c, i); m._pins[c.id] = new maplibregl.Marker({ element:pinEl(c), anchor:'bottom' }).setLngLat([ll[1], ll[0]]).addTo(m); });
   // ピンが全部画面に入るように合わせる（近すぎる時は場所ごとの拡大率まで）
   const lls = Object.values(m._pins).map(k => k.getLngLat());
-  if (lls.length && !UI.selPin){ const bb = new maplibregl.LngLatBounds([p.lng, p.lat], [p.lng, p.lat]); lls.forEach(x => bb.extend(x));
+  if (lls.length && !UI.selPin){ const bb = new maplibregl.LngLatBounds([me[1], me[0]], [me[1], me[0]]); lls.forEach(x => bb.extend(x));
     m.fitBounds(bb, { padding:{ top:150, bottom:90, left:50, right:50 }, maxZoom:p.zoom || MAP_ZOOM, animate:false }); }
   m.on('dragstart', () => { map.dataset.justDragged = '1'; });
   m.on('dragend', () => setTimeout(() => delete map.dataset.justDragged, 80));
@@ -1031,7 +1032,7 @@ function staticMap(el, p, map){
   m._kind = 'lf'; m._pins = {};
   m.attributionControl.setPrefix(false);
   L.imageOverlay(`img/map/${p.key}.jpg`, b, { attribution:'出典：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>' }).addTo(m);
-  L.marker([p.lat, p.lng], { icon:L.divIcon({ className:'', html:meEl().outerHTML, iconSize:[22, 22], iconAnchor:[11, 11] }), interactive:false, keyboard:false }).addTo(m);
+  L.marker(p.me || [p.lat, p.lng], { icon:L.divIcon({ className:'', html:meEl(p).outerHTML, iconSize:[22, 22], iconAnchor:[11, 11] }), interactive:false, keyboard:false }).addTo(m);
   pinsData().forEach((c, i) => { const e = pinEl(c), a = c.work.aspect, h = Math.round(74 * (400 * a[1] / a[0] + 20) / 400) + 6 + 11;
     m._pins[c.id] = L.marker(encLL(c, i), { icon:L.divIcon({ className:'lpin', html:e.innerHTML, iconSize:[74, h], iconAnchor:[37, h] }), interactive:false, keyboard:false }).addTo(m); });
   m.on('dragstart', () => { map.dataset.justDragged = '1'; });
